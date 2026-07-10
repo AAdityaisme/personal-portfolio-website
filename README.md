@@ -12,8 +12,10 @@ npm run build
 
 ## Private live counter
 
-Visit counter page (not linked from the site UI):
+Not linked from the site UI. Live page:
 
-`/stats.html`
+https://aadi-stats-deploy.vercel.app
+
+Also available on the portfolio host at `/stats.html` once the main app is deployed.
 
 Local: `http://localhost:5173/stats.html`
