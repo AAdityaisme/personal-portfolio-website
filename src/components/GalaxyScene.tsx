@@ -150,8 +150,8 @@ function CameraRig({
       dampingFactor={0.08}
       rotateSpeed={0.65}
       zoomSpeed={0.85}
-      minDistance={6}
-      maxDistance={28}
+      minDistance={8}
+      maxDistance={48}
       minPolarAngle={0.25}
       maxPolarAngle={Math.PI * 0.48}
       target={overviewLookAt}
@@ -223,7 +223,7 @@ function MilkyWaySky() {
   // Inward panorama — DoubleSide + no fog so it actually shows behind the system.
   return (
     <group scale={[-1, 1, 1]} renderOrder={-10}>
-      <ModelFit url="./models/milkyway.glb" targetSize={160} skybox noRaycast />
+      <ModelFit url="./models/milkyway.glb" targetSize={240} skybox noRaycast />
     </group>
   );
 }
@@ -376,22 +376,33 @@ function SunCore({
   );
 }
 
-function OrbitRing({ radius, accent }: { radius: number; accent: string }) {
+function OrbitRing({
+  radius,
+  accent,
+  inclination = 0,
+}: {
+  radius: number;
+  accent: string;
+  inclination?: number;
+}) {
   const line = useMemo(() => {
     const pts: THREE.Vector3[] = [];
     for (let i = 0; i <= 96; i++) {
       const a = (i / 96) * Math.PI * 2;
-      pts.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius));
+      const x = Math.cos(a) * radius;
+      const z = Math.sin(a) * radius;
+      const y = Math.sin(a) * Math.sin(inclination) * radius * 0.35;
+      pts.push(new THREE.Vector3(x, y, z));
     }
     const geo = new THREE.BufferGeometry().setFromPoints(pts);
     const mat = new THREE.LineBasicMaterial({ color: accent, transparent: true, opacity: 0.22 });
     const obj = new THREE.Line(geo, mat);
     obj.raycast = () => undefined;
     return obj;
-  }, [radius, accent]);
+  }, [radius, accent, inclination]);
 
   return (
-    <group rotation={[0.12, 0, 0.05]}>
+    <group rotation={[0.08, 0, 0.04]}>
       <primitive object={line} />
     </group>
   );
@@ -418,20 +429,23 @@ function GlbPlanet({
   const spin = useRef<THREE.Group>(null);
   const baseAngle = useMemo(() => 0.4 + node.index * 0.7, [node.index]);
   const frozenAngle = useRef(baseAngle);
-  const targetSize = node.size * (overview ? 1.55 : 1.85);
-  const hitRadius = Math.max(targetSize * 0.95, 1.15);
+  const targetSize = node.size * (overview ? 1.35 : 1.7);
+  const hitRadius = Math.max(targetSize * 0.95, 1.05);
+  const tilt = node.orbitInclination ?? 0;
+  const height = node.orbitHeight ?? 0;
 
   useFrame(({ clock }) => {
     if (!group.current) return;
     const t = clock.elapsedTime;
-    // Always advance orbit unless paused — never freeze forever.
     if (!orbitPaused && !reducedMotion) {
       frozenAngle.current = baseAngle + t * node.orbitSpeed;
     }
     const angle = frozenAngle.current;
-    const x = Math.cos(angle) * node.orbitRadius;
-    const y = Math.sin(angle * 0.28) * 0.35;
-    const z = Math.sin(angle) * node.orbitRadius;
+    const r = node.orbitRadius;
+    const x = Math.cos(angle) * r;
+    const z = Math.sin(angle) * r;
+    const y =
+      Math.sin(angle * 0.28) * 0.35 + Math.sin(angle) * Math.sin(tilt) * r * 0.35 + height;
     group.current.position.set(x, y, z);
     let tracked = planetWorld.get(node.index);
     if (!tracked) {
@@ -696,7 +710,7 @@ function SceneContents({
   return (
     <>
       <color attach="background" args={['#02030a']} />
-      <fog attach="fog" args={['#02030a', 55, 140]} />
+      <fog attach="fog" args={['#02030a', 90, 220]} />
       <ambientLight intensity={0.55} />
       <hemisphereLight args={['#c8d4ff', '#1a1208', 0.65]} />
       <directionalLight position={[8, 14, 6]} intensity={1.2} color="#fff2d8" />
@@ -733,7 +747,12 @@ function SceneContents({
       />
 
       {galaxyNodes.map((p) => (
-        <OrbitRing key={`ring-${p.id}`} radius={p.orbitRadius} accent={p.accent} />
+        <OrbitRing
+          key={`ring-${p.id}`}
+          radius={p.orbitRadius}
+          accent={p.accent}
+          inclination={p.orbitInclination ?? 0}
+        />
       ))}
 
       {galaxyNodes.map((node) => {
@@ -800,7 +819,7 @@ export function GalaxyScene({
     <div className="galaxyCanvas">
       <Canvas
         dpr={[1, 1.5]}
-        camera={{ position: overviewCameraPos, fov: 50, near: 0.1, far: 280 }}
+        camera={{ position: overviewCameraPos, fov: 48, near: 0.1, far: 420 }}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
         style={{ width: '100%', height: '100%', display: 'block', cursor: 'grab' }}
         onCreated={({ gl }) => {

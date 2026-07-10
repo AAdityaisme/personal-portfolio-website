@@ -24,6 +24,10 @@ export type GalaxyNode = {
   orbitRadius: number;
   size: number;
   orbitSpeed: number;
+  /** Radians — tilts the orbit so bodies never share one plane. */
+  orbitInclination?: number;
+  /** Extra vertical lane offset. */
+  orbitHeight?: number;
   hasRing?: boolean;
   model: string;
   meteorHighlight?: string;
@@ -61,7 +65,9 @@ export const galaxyNodes: GalaxyNode[] = [
     accent: '#f0d9a0',
     orbitRadius: 3.6,
     size: 0.72,
-    orbitSpeed: 0.085,
+    orbitSpeed: 0.055,
+    orbitInclination: 0.08,
+    orbitHeight: 0.15,
     model: './models/planet-serendip.glb',
     meteorHighlight: 'Turned down Georgia Tech',
     links: [{ label: 'LinkedIn', href: profile.linkedin }],
@@ -85,9 +91,11 @@ export const galaxyNodes: GalaxyNode[] = [
     mediaPlacement: 'side',
     bubbleSide: 'left',
     accent: '#3d8f6a',
-    orbitRadius: 4.4,
-    size: 0.95,
-    orbitSpeed: 0.12,
+    orbitRadius: 5.5,
+    size: 0.9,
+    orbitSpeed: 0.14,
+    orbitInclination: -0.12,
+    orbitHeight: -0.2,
     hasRing: true,
     model: './models/planet-stylized.glb',
     meteorHighlight: '4.0 GPA at DVC',
@@ -113,9 +121,11 @@ export const galaxyNodes: GalaxyNode[] = [
     mediaPlacement: 'none',
     bubbleSide: 'right',
     accent: '#8aa4ff',
-    orbitRadius: 5.2,
-    size: 0.88,
-    orbitSpeed: 0.095,
+    orbitRadius: 7.4,
+    size: 0.82,
+    orbitSpeed: 0.07,
+    orbitInclination: 0.16,
+    orbitHeight: 0.35,
     model: './models/planet-alien.glb',
     links: [{ label: 'LinkedIn', href: profile.linkedin }],
   },
@@ -138,9 +148,11 @@ export const galaxyNodes: GalaxyNode[] = [
     mediaPlacement: 'top',
     bubbleSide: 'left',
     accent: '#e8a04a',
-    orbitRadius: 6.1,
-    size: 0.9,
-    orbitSpeed: 0.08,
+    orbitRadius: 9.3,
+    size: 0.84,
+    orbitSpeed: 0.11,
+    orbitInclination: -0.09,
+    orbitHeight: -0.25,
     hasRing: true,
     model: './models/planet-fire.glb',
     meteorHighlight: 'YC Startup School 2026',
@@ -150,39 +162,11 @@ export const galaxyNodes: GalaxyNode[] = [
     ],
   },
   {
-    id: 'corgi',
+    id: 'openai',
     index: 4,
     kind: 'station',
-    title: 'GTM @ Corgi',
-    subtitle: 'GTM Station · The Market',
-    body: 'Growth, positioning, and go-to-market for a venture-backed Bay Area startup.',
-    bullets: [
-      'Venture-backed GTM seat',
-      'Positioning and growth systems',
-      'Bay Area operator work',
-    ],
-    date: 'June 2026 – Present',
-    impact: 'Venture-backed GTM',
-    logo: './images/corgi.png',
-    image: './images/corgi.png',
-    mediaPlacement: 'top',
-    bubbleSide: 'right',
-    accent: '#d4a574',
-    orbitRadius: 7.0,
-    size: 0.78,
-    orbitSpeed: 0.11,
-    model: './models/spaceship.glb',
-    links: [
-      { label: 'Email Aadi', href: `mailto:${profile.email}` },
-      { label: 'LinkedIn', href: profile.linkedin },
-    ],
-  },
-  {
-    id: 'openai',
-    index: 5,
-    kind: 'planet',
     title: 'AI Evaluation Specialist',
-    subtitle: 'OpenAI Planet · Frontier Evaluation',
+    subtitle: 'OpenAI Station · Frontier Evaluation',
     body: 'Selected into a specialized evaluation track after four-step screening — 40-person frontier team.',
     bullets: [
       '40-person frontier evaluation team',
@@ -194,15 +178,47 @@ export const galaxyNodes: GalaxyNode[] = [
     logo: './images/openai-mark.png',
     image: './images/openai-mark.png',
     mediaPlacement: 'side',
-    bubbleSide: 'left',
+    bubbleSide: 'right',
     accent: '#e8e8e8',
-    orbitRadius: 7.9,
-    size: 0.82,
-    orbitSpeed: 0.075,
-    model: './models/planet-nine.glb',
+    orbitRadius: 11.2,
+    size: 0.72,
+    orbitSpeed: 0.24,
+    orbitInclination: 0.2,
+    orbitHeight: 0.45,
+    model: './models/spaceship.glb',
     meteorHighlight: 'OpenAI evaluation track',
     links: [
       { label: 'OpenAI', href: 'https://openai.com/' },
+      { label: 'LinkedIn', href: profile.linkedin },
+    ],
+  },
+  {
+    id: 'corgi',
+    index: 5,
+    kind: 'planet',
+    title: 'GTM @ Corgi',
+    subtitle: 'GTM Planet · The Market',
+    body: 'Growth, positioning, and go-to-market for a venture-backed Bay Area startup.',
+    bullets: [
+      'Venture-backed GTM seat',
+      'Positioning and growth systems',
+      'Bay Area operator work',
+    ],
+    date: 'June 2026 – Present',
+    impact: 'Venture-backed GTM',
+    logo: './images/corgi.png',
+    image: './images/corgi.png',
+    mediaPlacement: 'top',
+    bubbleSide: 'left',
+    accent: '#d4a574',
+    orbitRadius: 13.1,
+    size: 0.8,
+    orbitSpeed: 0.09,
+    orbitInclination: -0.14,
+    orbitHeight: -0.3,
+    model: './models/planet-nine.glb',
+    links: [
+      { label: 'Email Aadi', href: `mailto:${profile.email}` },
       { label: 'LinkedIn', href: profile.linkedin },
     ],
   },
@@ -225,9 +241,11 @@ export const galaxyNodes: GalaxyNode[] = [
     mediaPlacement: 'side',
     bubbleSide: 'right',
     accent: '#b794f6',
-    orbitRadius: 5.65,
-    size: 0.86,
-    orbitSpeed: 0.1,
+    orbitRadius: 15.0,
+    size: 0.8,
+    orbitSpeed: 0.045,
+    orbitInclination: 0.11,
+    orbitHeight: 0.2,
     hasRing: true,
     model: './models/planet-ringed.glb',
     links: [
@@ -252,9 +270,11 @@ export const galaxyNodes: GalaxyNode[] = [
     mediaPlacement: 'none',
     bubbleSide: 'left',
     accent: '#6ec6a8',
-    orbitRadius: 8.7,
-    size: 0.8,
-    orbitSpeed: 0.09,
+    orbitRadius: 16.9,
+    size: 0.76,
+    orbitSpeed: 0.16,
+    orbitInclination: -0.18,
+    orbitHeight: -0.4,
     model: './models/planet-purple.glb',
     links: [{ label: 'LinkedIn', href: profile.linkedin }],
   },
@@ -275,9 +295,11 @@ export const galaxyNodes: GalaxyNode[] = [
     mediaPlacement: 'none',
     bubbleSide: 'right',
     accent: '#ffb347',
-    orbitRadius: 9.5,
-    size: 0.74,
-    orbitSpeed: 0.07,
+    orbitRadius: 18.8,
+    size: 0.7,
+    orbitSpeed: 0.035,
+    orbitInclination: 0.1,
+    orbitHeight: 0.25,
     model: './models/planet-fire.glb',
     meteorHighlight: '$15,000+ sales in 30 days',
     links: [{ label: 'LinkedIn', href: profile.linkedin }],
@@ -289,7 +311,12 @@ export function nodePosition(index: number): [number, number, number] {
   if (!node) return [0, 0, 0];
   const angle = 0.55 + index * 0.72;
   const r = node.orbitRadius;
-  return [Math.cos(angle) * r, Math.sin(angle * 0.28) * 0.35, Math.sin(angle) * r];
+  const tilt = node.orbitInclination ?? 0;
+  const height = node.orbitHeight ?? 0;
+  const x = Math.cos(angle) * r;
+  const z = Math.sin(angle) * r;
+  const y = Math.sin(angle * 0.28) * 0.35 + Math.sin(angle) * Math.sin(tilt) * r * 0.35 + height;
+  return [x, y, z];
 }
 
 export function liveNodePosition(
@@ -302,13 +329,18 @@ export function liveNodePosition(
   if (!node) return nodePosition(index);
   const baseAngle = 0.55 + index * 0.72;
   const r = node.orbitRadius;
+  const tilt = node.orbitInclination ?? 0;
+  const height = node.orbitHeight ?? 0;
   const angle =
     reducedMotion || orbitPaused ? baseAngle : baseAngle + elapsed * node.orbitSpeed;
-  return [Math.cos(angle) * r, Math.sin(angle * 0.28) * 0.35, Math.sin(angle) * r];
+  const x = Math.cos(angle) * r;
+  const z = Math.sin(angle) * r;
+  const y = Math.sin(angle * 0.28) * 0.35 + Math.sin(angle) * Math.sin(tilt) * r * 0.35 + height;
+  return [x, y, z];
 }
 
-/** Angled overview — fills the screen, whole system visible. */
-export const overviewCameraPos: [number, number, number] = [9.5, 5.8, 11.5];
+/** Angled overview — whole system visible with spaced orbits. */
+export const overviewCameraPos: [number, number, number] = [16.5, 9.5, 19.5];
 export const overviewLookAt: [number, number, number] = [0, 0.2, 0];
 
 export const sunNode: GalaxyNode = {
