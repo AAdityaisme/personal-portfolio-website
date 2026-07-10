@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Live visits · Aadi Sharma</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Fraunces:opsz,wght@9..144,500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #17191f;
+        --ink: #f5f1e8;
+        --muted: rgba(245, 241, 232, 0.62);
+        --gold: #d4af37;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        min-height: 100svh;
+        display: grid;
+        place-items: center;
+        padding: 32px 20px;
+        font-family: Figtree, system-ui, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 70% 45% at 50% -10%, rgba(212, 175, 55, 0.12), transparent 55%),
+          var(--bg);
+      }
+      .card {
+        width: min(520px, 100%);
+        text-align: center;
+        display: grid;
+        gap: 14px;
+        justify-items: center;
+      }
+      .kicker {
+        font-size: 0.78rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--gold);
+        font-weight: 700;
+      }
+      h1 {
+        font-family: Fraunces, Georgia, serif;
+        font-weight: 500;
+        font-size: clamp(1.8rem, 5vw, 2.4rem);
+      }
+      .count {
+        font-family: Fraunces, Georgia, serif;
+        font-size: clamp(4.5rem, 16vw, 7rem);
+        line-height: 1;
+        letter-spacing: -0.03em;
+        color: #fff;
+        text-shadow: 0 0 40px rgba(212, 175, 55, 0.25);
+        font-variant-numeric: tabular-nums;
+        min-height: 1.1em;
+      }
+      .count.isLoading {
+        opacity: 0.45;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.5;
+        max-width: 34ch;
+      }
+      .pulse {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #3dcf7a;
+        box-shadow: 0 0 14px #3dcf7a;
+        animation: beat 1.4s ease-in-out infinite;
+      }
+      .row {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      @keyframes beat {
+        0%,
+        100% {
+          opacity: 0.45;
+          transform: scale(0.85);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.15);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <p class="kicker">Private stats</p>
+      <h1>Live portfolio visits</h1>
+      <p id="count" class="count isLoading">—</p>
+      <div class="row">
+        <span class="pulse" aria-hidden="true"></span>
+        <span>Live · auto refresh</span>
+      </div>
+      <p class="meta">
+        Counts real loads of the main site. This page is not linked from the portfolio.
+      </p>
+    </main>
+    <script>
+      const WORKSPACE = 'aadisharma-portfolio';
+      const NAME = 'visits';
+      const BASE = `https://api.counterapi.dev/v1/${WORKSPACE}/${NAME}`;
+      const el = document.getElementById('count');
+
+      function formatCount(n) {
+        return new Intl.NumberFormat('en-US').format(n);
+      }
+
+      async function readCount() {
+        try {
+          const res = await fetch(`${BASE}/`, { cache: 'no-store' });
+          if (!res.ok) throw new Error(String(res.status));
+          const data = await res.json();
+          const value = Number(data.count ?? data.value ?? 0);
+          el.textContent = formatCount(Number.isFinite(value) ? value : 0);
+          el.classList.remove('isLoading');
+        } catch {
+          el.textContent = 'offline';
+          el.classList.remove('isLoading');
+        }
+      }
+
+      readCount();
+      setInterval(readCount, 4000);
+    </script>
+  </body>
+</html>
