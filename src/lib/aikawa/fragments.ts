@@ -108,18 +108,21 @@ export function scatterFor(piece: Piece, rand: Rng, spreadPx: number): ScatterTa
 }
 
 /**
- * Dispersal targets for the mosaic breakup: outward 60–280px, extra
- * rotation −12°..12°, opacity 0.2–0.75, scale 0.85–1.08.
+ * Dispersal targets for the mosaic breakup. Motion is gentle and outward;
+ * pieces near the rect center dissolve so the middle of the scene clears,
+ * while edge pieces survive as the new section's decorative border.
  */
 export function disperseFor(piece: Piece, rand: Rng): ScatterTarget {
   const angle = Math.atan2(piece.cy - 0.5, (piece.cx - 0.5) * 1.35);
-  const dist = 60 + rand() * 220;
+  const edge = Math.min(1, piece.fromCenter / 0.55); // 0 center → 1 edge
+  const dist = (50 + rand() * 150) * (0.6 + edge * 0.8);
   return {
-    x: Math.cos(angle) * dist * 1.35,
+    x: Math.cos(angle) * dist * 1.3,
     y: Math.sin(angle) * dist,
     rotation: (rand() - 0.5) * 24,
     scale: 0.85 + rand() * 0.23,
-    opacity: 0.2 + rand() * 0.55,
+    // Center pieces clear the scene entirely; edge pieces stay translucent.
+    opacity: edge < 0.45 ? 0 : 0.18 + edge * 0.4 + rand() * 0.15,
   };
 }
 
@@ -146,8 +149,8 @@ export function makeDecorFragments(count: number, palette: string[], seed = 11):
   for (let i = 0; i < count; i++) {
     // Keep the middle clear — bias positions to an elliptical band.
     const a = rand() * Math.PI * 2;
-    const rx = 0.28 + rand() * 0.24;
-    const ry = 0.22 + rand() * 0.26;
+    const rx = 0.36 + rand() * 0.22;
+    const ry = 0.3 + rand() * 0.24;
     const n = 3 + Math.floor(rand() * 3);
     const pts: string[] = [];
     for (let k = 0; k < n; k++) {
@@ -162,7 +165,7 @@ export function makeDecorFragments(count: number, palette: string[], seed = 11):
       rotation: (rand() - 0.5) * 40,
       clipPath: `polygon(${pts.join(', ')})`,
       color: palette[Math.floor(rand() * palette.length)],
-      opacity: 0.25 + rand() * 0.55,
+      opacity: 0.18 + rand() * 0.42,
       depth: rand(),
       phase: rand() * Math.PI * 2,
       speed: 0.25 + rand() * 0.5,

@@ -63,6 +63,13 @@ export function JourneyScene({
 
   // --- Entrance: title sharpen + fragment assembly -------------------------
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setAssembled(true);
+      const t1 = gsap.delayedCall(0.1, () => onAssembledRef.current());
+      return () => {
+        t1.kill();
+      };
+    }
     const ctx = gsap.context(() => {
       gsap.fromTo(
         titleRef.current,

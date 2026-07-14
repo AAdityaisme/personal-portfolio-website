@@ -44,6 +44,16 @@ export function MosaicTransition({
   }, [pieces]);
 
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      // No dispersal animation — clear the overlay so the Work scene is unobstructed.
+      if (root.current) gsap.set(root.current, { opacity: 0 });
+      const t1 = gsap.delayedCall(0.15, () => onTitleRevealRef.current());
+      const t2 = gsap.delayedCall(0.4, () => onDoneRef.current());
+      return () => {
+        t1.kill();
+        t2.kill();
+      };
+    }
     const ctx = gsap.context(() => {
       const els = gsap.utils.toArray<HTMLElement>('.akxMosaicPiece');
       const tl = gsap.timeline({ onComplete: () => onDoneRef.current() });
@@ -86,7 +96,7 @@ export function MosaicTransition({
         // Phase 3 — recolor toward Work tones while separated.
         const tintEl = el.firstElementChild;
         if (tintEl) {
-          tl.to(tintEl, { opacity: 0.62, duration: 0.55, ease: MOTION.easeSoft }, 0.32);
+          tl.to(tintEl, { opacity: 0.45, duration: 0.55, ease: MOTION.easeSoft }, 0.32);
         }
       });
 

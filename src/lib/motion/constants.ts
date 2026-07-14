@@ -105,7 +105,7 @@ export const STRIP = {
   /** Gap between panel bottom and reflection top, px. */
   reflectionGap: 14,
   /** Reflection vertical compression. */
-  reflectionScale: 0.78,
+  reflectionScale: 0.58,
 } as const;
 
 /** Asymmetric editorial grid cells, keyed by wrapped carousel offset. */

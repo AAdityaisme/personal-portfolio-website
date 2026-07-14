@@ -114,7 +114,6 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
 
     const capEls = Array.from(root.current?.querySelectorAll<SVGPathElement>('.akxCardCap path') ?? []);
     const shadowEls = Array.from(root.current?.querySelectorAll<HTMLElement>('.akxCardCapShadow') ?? []);
-    const mediaImgs = Array.from(root.current?.querySelectorAll<HTMLElement>('.akxCardMedia img') ?? []);
     const cardEls = Array.from(root.current?.querySelectorAll<HTMLElement>('.akxCard') ?? []);
     const springs: CapSpring[] = capEls.map(() => ({
       arch: 15,
@@ -131,15 +130,33 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
       el.addEventListener('pointerenter', () => {
         spring.hover = true;
         gsap.to(el, { y: -5, scale: 1.008, duration: 0.42, ease: MOTION.easeOut });
-        gsap.to(mediaImgs[i] ?? null, { scale: 1.018, duration: 0.42, ease: MOTION.easeOut });
         gsap.to(shadowEls[i] ?? null, { opacity: 1, duration: 0.42, ease: MOTION.easeOut });
       });
       el.addEventListener('pointerleave', () => {
         spring.hover = false;
         gsap.to(el, { y: 0, scale: 1, duration: 0.65, ease: 'elastic.out(1, 0.7)' });
-        gsap.to(mediaImgs[i] ?? null, { scale: 1, duration: 0.65, ease: 'elastic.out(1, 0.7)' });
         gsap.to(shadowEls[i] ?? null, { opacity: 0.72, duration: 0.65, ease: MOTION.easeOut });
       });
+    });
+
+    // Scroll-entry: each card rises and sharpens as it enters the viewport.
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          gsap.fromTo(
+            entry.target,
+            { y: 46, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.75, ease: MOTION.easeOut, overwrite: 'auto' }
+          );
+          io.unobserve(entry.target);
+        });
+      },
+      { root: scroller.current, threshold: 0.18 }
+    );
+    cardEls.forEach((el) => {
+      gsap.set(el, { opacity: 0 });
+      io.observe(el);
     });
 
     let raf = 0;
@@ -150,7 +167,6 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
 
-      const vh = window.innerHeight;
       springs.forEach((s, i) => {
         const archTarget = (s.hover ? 26 : 15) + Math.min(14, Math.abs(velocity) * 0.55);
         const leanTarget = Math.max(-0.16, Math.min(0.16, velocity * 0.01));
@@ -164,15 +180,6 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
         [s.lean, s.leanV] = spring(s.lean, s.leanV, leanTarget, 90, 11);
         [s.corner, s.cornerV] = spring(s.corner, s.cornerV, cornerTarget);
         capEls[i]?.setAttribute('d', capPath(s.arch, s.lean, s.corner));
-
-        // Internal image moves 3–5% slower than the card (soft parallax).
-        const card = cardEls[i];
-        const img = mediaImgs[i];
-        if (card && img) {
-          const r = card.getBoundingClientRect();
-          const rel = (r.top + r.height / 2 - vh / 2) / vh;
-          img.style.translate = `0 ${(rel * 4).toFixed(2)}%`;
-        }
       });
       velocity *= 0.9;
     };
@@ -180,6 +187,7 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
 
     return () => {
       cancelAnimationFrame(raf);
+      io.disconnect();
       lenis.destroy();
     };
   }, [cards]);
@@ -219,26 +227,19 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
           </section>
 
           <section className="akxCards">
-            {cards.map((card) => (
+            {cards.map((card, i) => (
               <article className="akxCard" key={card.id}>
                 <svg className="akxCardCap" viewBox="0 0 1000 120" preserveAspectRatio="none" aria-hidden="true">
                   <path d={capPath(15, 0, 0)} />
                 </svg>
                 <div className="akxCardCapShadow" aria-hidden="true" />
-                <div className="akxCardMedia" style={{ background: card.imageBg ?? '#ece9e3' }}>
-                  {card.image ? (
-                    <img
-                      src={card.image}
-                      alt=""
-                      draggable={false}
-                      className={card.imageFit === 'contain' ? 'isContain' : 'isCover'}
-                    />
-                  ) : null}
-                </div>
-                <div className="akxCardFooter">
-                  <p className="akxCardMeta">{card.meta ?? category.label}</p>
+                <div className="akxCardBody">
+                  <div className="akxCardHead">
+                    <p className="akxCardMeta">{card.meta ?? category.label}</p>
+                    <p className="akxCardIndex">{String(i + 1).padStart(2, '0')}</p>
+                  </div>
                   <h3>{card.title}</h3>
-                  <p>{card.body}</p>
+                  <p className="akxCardText">{card.body}</p>
                 </div>
               </article>
             ))}

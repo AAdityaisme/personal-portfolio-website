@@ -10,6 +10,7 @@ import {
   wrapOffset,
   type Scene,
 } from '../../lib/motion/constants';
+import { ErrorBoundary } from '../ErrorBoundary';
 import { Loader } from './Loader';
 import { JourneyScene } from './JourneyScene';
 import { PortfolioCanvas, type PanelPointerEvent } from './PortfolioCanvas';
@@ -150,7 +151,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
     tl.fromTo(
       shadowEl.current,
       { opacity: 0 },
-      { opacity: 0.13 * ms.debug.shadowStrength, duration: 0.55, ease: MOTION.easeOut },
+      { opacity: 0.5 * ms.debug.shadowStrength, duration: 0.55, ease: MOTION.easeOut },
       0.55
     );
     tl.fromTo(
@@ -187,6 +188,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
     lock.current = true;
     ms.hoverPanel = -1;
     badge.current.visible = false;
+    gsap.killTweensOf(badgeEl.current);
     gsap.set(badgeEl.current, { opacity: 0 });
     // Stop rotation first, then unfold.
     activeFloat.current = Math.round(activeFloat.current);
@@ -208,6 +210,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
     lock.current = true;
     ms.hoverPanel = -1;
     badge.current.visible = false;
+    gsap.killTweensOf(badgeEl.current);
     gsap.to(badgeEl.current, { opacity: 0, duration: 0.2, ease: 'power2.out' });
     const tl = gsap.timeline({
       onComplete: () => {
@@ -218,7 +221,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
     tl.to(ms.grid, { value: 0, duration: 1.05, ease: MOTION.easeInOut }, 0);
     tl.to(
       shadowEl.current,
-      { opacity: 0.13 * ms.debug.shadowStrength, duration: 0.5, ease: MOTION.easeOut },
+      { opacity: 0.5 * ms.debug.shadowStrength, duration: 0.5, ease: MOTION.easeOut },
       0.55
     );
     tl.fromTo(
@@ -243,6 +246,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
       ms.selectedIndex = i;
       ms.hoverPanel = -1;
       badge.current.visible = false;
+      gsap.killTweensOf(badgeEl.current);
       gsap.to(badgeEl.current, { opacity: 0, duration: 0.2, ease: 'power2.out' });
       setSelectedIndex(i);
 
@@ -280,7 +284,10 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
   const handleMosaicDone = useCallback(() => {
     lock.current = false;
     // Fragments stay scattered as the Work section border, then fade softly.
-    gsap.to('.akxMosaic', { opacity: 0.5, duration: 1.2, delay: 0.6, ease: MOTION.easeSoft });
+    // Resolve the element now — it may already be unmounted after a fast exit.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const el = document.querySelector('.akxMosaic');
+    if (el) gsap.to(el, { opacity: 0.35, duration: 1.2, delay: 0.6, ease: MOTION.easeSoft });
   }, []);
 
   const backToPortfolio = useCallback(() => {
@@ -302,7 +309,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
           { opacity: 1, xPercent: -50, yPercent: -50, y: 0, scaleX: 1, duration: 0.85, ease: 'power4.out' }
         );
         gsap.to(shadowEl.current, {
-          opacity: 0.13 * ms.debug.shadowStrength,
+          opacity: 0.5 * ms.debug.shadowStrength,
           duration: 0.55,
           delay: 0.2,
           ease: MOTION.easeOut,
@@ -329,18 +336,18 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
       if (on) {
         gsap.to(ms.lift, { value: -5, duration: MOTION.hover, ease: MOTION.easeOut });
         gsap.to(shadowEl.current, {
-          opacity: 0.09 * ms.debug.shadowStrength,
+          opacity: 0.3 * ms.debug.shadowStrength,
           scaleX: 1.08,
-          filter: 'blur(23px)',
+          filter: 'blur(22px)',
           duration: MOTION.hover,
           ease: MOTION.easeOut,
         });
       } else {
         gsap.to(ms.lift, { value: 0, duration: 0.55, ease: MOTION.easeOut });
         gsap.to(shadowEl.current, {
-          opacity: 0.13 * ms.debug.shadowStrength,
+          opacity: 0.5 * ms.debug.shadowStrength,
           scaleX: 1,
-          filter: 'blur(18px)',
+          filter: 'blur(14px)',
           duration: 0.55,
           ease: MOTION.easeOut,
         });
@@ -372,6 +379,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
             badge.current.visible = true;
             badge.current.x = e.clientX;
             badge.current.y = e.clientY;
+            gsap.killTweensOf(badgeEl.current);
             gsap.fromTo(
               badgeEl.current,
               { opacity: 0, scale: 0.92, filter: 'blur(3px)' },
@@ -381,6 +389,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
         } else if (ms.hoverPanel === e.index) {
           ms.hoverPanel = -1;
           badge.current.visible = false;
+          gsap.killTweensOf(badgeEl.current);
           gsap.to(badgeEl.current, { opacity: 0, duration: 0.24, ease: 'power2.out' });
         }
       }
@@ -410,6 +419,12 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
       raf = requestAnimationFrame(tick);
       const b = badge.current;
       if (!badgeEl.current) return;
+      // Safety: the badge only exists in grid mode — kill it anywhere else.
+      if (b.visible && sceneRef.current !== 'portfolio-grid') {
+        b.visible = false;
+        gsap.killTweensOf(badgeEl.current);
+        gsap.to(badgeEl.current, { opacity: 0, duration: 0.18, ease: 'power2.out' });
+      }
       b.x += (b.tx - b.x) * 0.18;
       b.y += (b.ty - b.y) * 0.18;
       if (ms.hoverPanel >= 0) {
@@ -597,12 +612,21 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
           className={`akxCanvasWrap ${canvasVisible ? 'isOn' : ''} ${inWork || mosaicOn ? 'isBehind' : ''}`}
           onPointerDown={onDragStart}
         >
-          <PortfolioCanvas
-            categories={orbitCategories}
-            motionState={ms}
-            onPanelPointer={onPanelPointer}
-            onPanelClick={onPanelClick}
-          />
+          <ErrorBoundary
+            fallback={
+              <div className="akxCanvasFallback">
+                <img src={active.image} alt={active.label} />
+                <p>{active.label}</p>
+              </div>
+            }
+          >
+            <PortfolioCanvas
+              categories={orbitCategories}
+              motionState={ms}
+              onPanelPointer={onPanelPointer}
+              onPanelClick={onPanelClick}
+            />
+          </ErrorBoundary>
         </div>
       ) : null}
 

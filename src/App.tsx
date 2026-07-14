@@ -7,6 +7,7 @@ import { GlassBubble } from './components/GlassBubble';
 import type { FocusTarget } from './components/GalaxyScene';
 import { galaxyNodes, sunNode } from './data/aadiData';
 import { useReducedMotion } from './hooks/useScrollProgress';
+import { lockScroll, unlockScroll } from './lib/scrollLock';
 import { recordVisit } from './lib/visitCounter';
 
 const GalaxyScene = lazy(() =>
@@ -80,10 +81,9 @@ function GalaxyMode({ onExit }: { onExit: () => void }) {
   }, [focusedTarget, goBack, onExit]);
 
   useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    lockScroll('galaxy-mode');
     return () => {
-      document.body.style.overflow = prev;
+      unlockScroll('galaxy-mode');
       document.body.style.cursor = '';
     };
   }, []);

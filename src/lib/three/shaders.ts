@@ -63,15 +63,20 @@ varying vec2 vUv;
 void main() {
   vec2 flipped = vec2(vUv.x, 1.0 - vUv.y);
   vec2 uv = 0.5 + (flipped - 0.5) * uScale + uShift;
-  vec4 tex = texture2D(uMap, uv, 2.5);
+  // Blur grows toward the bottom of the reflection (further from contact line).
+  float bias = 2.2 + (1.0 - vUv.y) * 2.4;
+  vec4 tex = texture2D(uMap, uv, bias);
   float inside = step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
   vec3 color = mix(uBg, tex.rgb, tex.a * inside);
 
+  // Brighter, milkier and less saturated than the source.
   float lum = dot(color, vec3(0.299, 0.587, 0.114));
-  color = mix(vec3(lum), color, 0.7) * 1.08;
+  color = mix(vec3(lum), color, 0.55);
+  color = mix(color, vec3(1.0), 0.16) * 1.05;
 
-  float fade = smoothstep(0.12, 0.92, vUv.y);
-  fade = mix(0.0, 1.0, pow(fade, 1.4));
+  // Strongest at the contact line, gone before mid-height.
+  float fade = smoothstep(0.42, 1.0, vUv.y);
+  fade = pow(fade, 1.55);
   gl_FragColor = vec4(color, uOpacity * fade);
 }
 `;
