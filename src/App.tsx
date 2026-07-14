@@ -1,9 +1,9 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AikawaSite } from './components/AikawaSite';
+import { AikawaExperience } from './components/aikawa/AikawaExperience';
+import './components/aikawa/aikawa.css';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { GlassBubble } from './components/GlassBubble';
-import { SmoothScroll } from './components/SmoothScroll';
 import type { FocusTarget } from './components/GalaxyScene';
 import { galaxyNodes, sunNode } from './data/aadiData';
 import { useReducedMotion } from './hooks/useScrollProgress';
@@ -219,10 +219,8 @@ export default function App() {
   }
 
   return (
-    <SmoothScroll enabled>
-      <main className="appShell akShell">
-        <AikawaSite onEnterGalaxy={() => setMode('galaxy')} />
-      </main>
-    </SmoothScroll>
+    <main className="appShell akShell">
+      <AikawaExperience onEnterGalaxy={() => setMode('galaxy')} />
+    </main>
   );
 }

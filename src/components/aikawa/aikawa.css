@@ -1,0 +1,765 @@
+/* ==========================================================================
+   Aikawa experience — warm-white editorial stage, serif titles, glass dock.
+   All motion is GSAP-driven; CSS holds layout, glass and hover polish only.
+   ========================================================================== */
+
+.akxStage {
+  --serif: 'Instrument Serif', 'Times New Roman', serif;
+  --sans: 'Satoshi', 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --bg: #f4f3f0;
+  --ink: #131313;
+  --muted: rgba(19, 19, 19, 0.52);
+  position: relative;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+}
+
+/* --- Top bar -------------------------------------------------------------- */
+
+.akxTop {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 30;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 28px;
+  pointer-events: none;
+}
+
+.akxTop > * {
+  pointer-events: auto;
+}
+
+.akxTopName {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin: 0;
+}
+
+.akxTopGalaxy {
+  appearance: none;
+  border: 1px solid rgba(19, 19, 19, 0.22);
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--ink);
+  font: 500 11px/1 var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 9px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.28s ease, transform 0.28s ease, box-shadow 0.28s ease;
+}
+
+.akxTopGalaxy:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Loader ---------------------------------------------------------------- */
+
+.akxLoader {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+}
+
+.akxLoaderCenter {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 240px;
+  height: 240px;
+}
+
+.akxLoaderRing {
+  position: absolute;
+  inset: 20px;
+  color: var(--ink);
+}
+
+.akxLoaderRing circle {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transform-origin: center;
+  transform: rotate(-82deg);
+}
+
+.akxLoaderName {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.akxLoaderPct {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.akxLoaderMarker {
+  position: absolute;
+  bottom: 26px;
+  left: 50%;
+  width: 18px;
+  height: 2px;
+  transform: translateX(-50%);
+  background: var(--ink);
+  opacity: 0.35;
+}
+
+/* --- Shared section title ---------------------------------------------------- */
+
+.akxSectionTitle {
+  font-family: var(--serif);
+  font-size: clamp(5rem, 11vw, 11rem);
+  line-height: 0.84;
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  margin: 0;
+}
+
+/* --- Journey (homepage) ------------------------------------------------------ */
+
+.akxJourney {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+}
+
+.akxDecorLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.akxDecorFrag {
+  position: absolute;
+  display: block;
+  will-change: transform;
+}
+
+.akxJourneyTitle {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  translate: -50% -50%;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.akxHero {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  cursor: pointer;
+}
+
+.akxHeroInner {
+  position: absolute;
+  inset: 0;
+}
+
+.akxPiece,
+.akxHeroSolid {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  will-change: transform;
+}
+
+.akxPieceTint {
+  position: absolute;
+  inset: 0;
+  background: rgba(125, 211, 252, 0.9);
+  mix-blend-mode: screen;
+}
+
+/* --- Portfolio ---------------------------------------------------------------- */
+
+.akxPortfolioTitle {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  z-index: 2;
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(120px, 27vw, 560px);
+  letter-spacing: -0.045em;
+  line-height: 0.9;
+  color: #171513;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.akxCanvasWrap {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  opacity: 0;
+  touch-action: pan-y;
+  transition: opacity 0.25s ease;
+}
+
+.akxCanvasWrap.isOn {
+  opacity: 1;
+}
+
+.akxCanvasWrap.isBehind {
+  pointer-events: none;
+}
+
+.akxCanvasWrap canvas {
+  display: block;
+}
+
+.akxShadow {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.14);
+  filter: blur(18px);
+  z-index: 4;
+  pointer-events: none;
+}
+
+.akxStripLabel {
+  position: absolute;
+  left: 50%;
+  top: calc(50vh + 0.56 * 100vw * 9 / 21 / 2 - 52px);
+  translate: -50%;
+  z-index: 8;
+  margin: 0;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.akxViewBadge {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 20;
+  padding: 5px 7px;
+  border-radius: 3px;
+  background: rgba(45, 45, 45, 0.52);
+  color: white;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* --- Mosaic transition ------------------------------------------------------- */
+
+.akxMosaic {
+  position: absolute;
+  z-index: 9;
+  pointer-events: none;
+}
+
+.akxMosaicPiece {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  will-change: transform;
+}
+
+.akxMosaicTint {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  mix-blend-mode: hard-light;
+}
+
+/* --- Work scene ---------------------------------------------------------------- */
+
+.akxWork {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+}
+
+.akxWorkDecorLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.akxWorkDecor {
+  position: absolute;
+  display: block;
+}
+
+.akxWorkScroller {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+.akxWorkScroller::-webkit-scrollbar {
+  display: none;
+}
+
+.akxWorkIntro {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+  padding-top: 4vh;
+}
+
+.akxWorkLead {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.akxWorkRise {
+  width: min(680px, 74vw);
+  aspect-ratio: 16 / 9.6;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #eceae4;
+  will-change: transform;
+}
+
+.akxWorkRise img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.akxWorkHint {
+  margin: 8px 0 0;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* --- Stacked cards ---------------------------------------------------------------- */
+
+.akxCards {
+  display: flex;
+  flex-direction: column;
+  gap: 12vh;
+  padding: 8vh 0 22vh;
+  align-items: center;
+}
+
+.akxCard {
+  position: relative;
+  width: min(760px, 86vw);
+  cursor: pointer;
+  will-change: transform;
+}
+
+.akxCardCap {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 56px;
+  z-index: 2;
+}
+
+.akxCardCap path {
+  fill: #ffffff;
+}
+
+.akxCardCapShadow {
+  position: absolute;
+  top: 34px;
+  left: 5%;
+  width: 90%;
+  height: 18px;
+  border-radius: 50%;
+  z-index: 1;
+  opacity: 0.72;
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.08),
+    0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.akxCardMedia {
+  position: relative;
+  z-index: 2;
+  height: min(52vh, 480px);
+  overflow: hidden;
+  background: #ece9e3;
+}
+
+.akxCardMedia img {
+  width: 100%;
+  height: 106%;
+  object-fit: cover;
+  will-change: transform;
+}
+
+.akxCardMedia img.isContain {
+  object-fit: contain;
+  padding: 9%;
+  box-sizing: border-box;
+}
+
+.akxCardFooter {
+  position: relative;
+  z-index: 2;
+  background: #fff;
+  padding: 22px 26px 26px;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.07);
+}
+
+.akxCardFooter h3 {
+  margin: 4px 0 8px;
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.akxCardFooter p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.akxCardMeta {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* --- Glass dock ----------------------------------------------------------------- */
+
+.akxDock {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%) translateY(26px);
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.55s ease, transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.akxDock.isOn {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.akxDockPill,
+.akxDockCircle {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(95, 95, 95, 0.34);
+  color: #fff;
+  backdrop-filter: blur(17px) saturate(115%);
+  -webkit-backdrop-filter: blur(17px) saturate(115%);
+  box-shadow:
+    0 11px 30px rgba(0, 0, 0, 0.16),
+    0 3px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.28s ease,
+    box-shadow 0.28s ease,
+    padding 0.28s ease;
+}
+
+.akxDockCircle {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.akxDockCircle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.akxDockIcon {
+  font-size: 22px;
+  line-height: 1;
+  display: block;
+  transition: transform 0.28s ease;
+}
+
+.akxDockCircle:hover {
+  transform: translateY(-2px) scale(1.08);
+  background: rgba(112, 112, 112, 0.4);
+  box-shadow:
+    0 15px 36px rgba(0, 0, 0, 0.18),
+    0 4px 10px rgba(0, 0, 0, 0.09),
+    inset 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.akxDockCircle:hover .akxDockIcon.isLeft {
+  transform: translateX(-2px);
+}
+
+.akxDockCircle:hover .akxDockIcon.isRight {
+  transform: translateX(2px);
+}
+
+.akxDockCircle:active,
+.akxDockPill:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 0.1s;
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.14),
+    0 2px 5px rgba(0, 0, 0, 0.07),
+    inset 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.akxDockPill {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 6px 18px 6px 7px;
+  border-radius: 999px;
+  height: 46px;
+}
+
+.akxDockPill:hover {
+  transform: translateY(-2px);
+  padding-right: 26px;
+  background: rgba(112, 112, 112, 0.4);
+  box-shadow:
+    0 15px 36px rgba(0, 0, 0, 0.18),
+    0 4px 10px rgba(0, 0, 0, 0.09),
+    inset 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.akxDockThumb {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: none;
+  transition: transform 0.28s ease;
+}
+
+.akxDockPill:hover .akxDockThumb {
+  transform: scale(1.07);
+}
+
+.akxDockThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.akxDockThumb img.isContain {
+  object-fit: contain;
+  padding: 17%;
+  box-sizing: border-box;
+}
+
+.akxDockText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  text-align: left;
+  transition: transform 0.28s ease;
+}
+
+.akxDockPill:hover .akxDockText {
+  transform: translateX(2px);
+}
+
+.akxDockSub {
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  opacity: 0.65;
+  font-variant-numeric: tabular-nums;
+}
+
+.akxDockText strong {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.akxDockDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  margin-left: 2px;
+}
+
+.akxRoll {
+  position: relative;
+  display: block;
+  overflow: hidden;
+}
+
+.akxDockThumb .akxRoll,
+.akxDockThumb .akxRollItem {
+  position: absolute;
+  inset: 0;
+}
+
+.akxDockText .akxRoll {
+  height: 15px;
+  min-width: 52px;
+}
+
+.akxDockText .akxRollItem {
+  position: absolute;
+  inset: 0;
+  display: block;
+  white-space: nowrap;
+}
+
+/* --- Debug panel ------------------------------------------------------------------ */
+
+.akxDbg {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 2000;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--ink, #111);
+}
+
+.akxDbgToggle {
+  appearance: none;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.akxDbgBody {
+  margin-top: 8px;
+  width: 240px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(8px);
+}
+
+.akxDbgButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.akxDbgButtons button {
+  appearance: none;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  background: #fff;
+  border-radius: 5px;
+  padding: 5px 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+}
+
+.akxDbgButtons button:hover {
+  background: #f0efec;
+}
+
+.akxDbgRow {
+  display: block;
+  margin: 7px 0;
+}
+
+.akxDbgRow span {
+  display: flex;
+  justify-content: space-between;
+}
+
+.akxDbgRow em {
+  font-style: normal;
+  opacity: 0.6;
+}
+
+.akxDbgRow input {
+  width: 100%;
+}
+
+/* --- Small screens ------------------------------------------------------------------ */
+
+@media (max-width: 720px) {
+  .akxPortfolioTitle {
+    font-size: clamp(64px, 21vw, 120px);
+  }
+
+  .akxSectionTitle {
+    font-size: clamp(3.4rem, 15vw, 6rem);
+  }
+
+  .akxStripLabel {
+    top: auto;
+    bottom: 22vh;
+  }
+
+  .akxDockText .akxRoll {
+    min-width: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .akxDock,
+  .akxDockPill,
+  .akxDockCircle,
+  .akxDockThumb,
+  .akxDockText {
+    transition: none;
+  }
+}
