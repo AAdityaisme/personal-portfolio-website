@@ -1,11 +1,16 @@
 :root {
-  --bg: #14161c;
-  --text: #f5f3ef;
-  --muted: rgba(245, 243, 239, 0.62);
+  --bg: #0c0c0c;
+  --text: #f3f3f3;
+  --muted: rgba(243, 243, 243, 0.58);
   --glass: rgba(255, 255, 255, 0.08);
   --glassBorder: rgba(255, 255, 255, 0.22);
-  --serif: "Fraunces", "Times New Roman", serif;
-  --sans: "Figtree", system-ui, sans-serif;
+  --serif: "Instrument Serif", "Times New Roman", serif;
+  --sans: "Instrument Sans", system-ui, sans-serif;
+  --akBg: #0c0c0c;
+  --akInk: #f3f3f3;
+  --akMuted: rgba(243, 243, 243, 0.56);
+  --akLine: rgba(243, 243, 243, 0.14);
+  --akCard: #161616;
   --edBg: #17191f;
   --edInk: #f5f1e8;
   --edMuted: rgba(245, 241, 232, 0.7);
@@ -69,6 +74,14 @@ a {
   color: var(--edInk);
 }
 
+.appShell.akShell {
+  height: auto;
+  min-height: 100svh;
+  overflow: auto;
+  background: var(--akBg);
+  color: var(--akInk);
+}
+
 .appShell.galaxyShell {
   height: 100vh;
   height: 100dvh;
@@ -82,9 +95,33 @@ a {
   height: 100%;
 }
 
+.galaxyModeEnter {
+  animation: galaxyModeIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes galaxyModeIn {
+  0% {
+    opacity: 0;
+    transform: scale(1.12);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
 body:has(.edShell) {
   background: var(--edBg);
   color: var(--edInk);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body:has(.akShell) {
+  background: var(--akBg);
+  color: var(--akInk);
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -721,6 +758,40 @@ body:has(.galaxyShell) {
   pointer-events: none;
 }
 
+.orbitSubtitleStage {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  width: min(34rem, calc(100% - 48px));
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  min-height: 4.5rem;
+}
+
+.orbitSubtitle {
+  position: relative;
+  left: auto;
+  top: auto;
+  z-index: 5;
+  width: 100%;
+  transform: none;
+  margin: 0;
+  text-align: center;
+  pointer-events: none;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(1rem, 2.4vw, 1.35rem);
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  color: rgba(255, 252, 245, 0.92);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    0 8px 32px rgba(0, 0, 0, 0.65);
+}
+
 .orbitHintPulse {
   width: 8px;
   height: 8px;
@@ -1304,11 +1375,32 @@ body:has(.galaxyShell) {
 
 .edHero {
   position: relative;
-  min-height: min(78svh, 720px);
+  isolation: isolate;
+  min-height: min(100svh, 920px);
   display: grid;
   place-items: center;
   padding: clamp(56px, 9vw, 100px) clamp(22px, 5vw, 56px);
   text-align: center;
+  background-color: #05060a;
+  background-size: cover;
+  background-position: center 35%;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+
+.edHeroScrim {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(5, 6, 10, 0.42) 0%,
+      rgba(5, 6, 10, 0.55) 45%,
+      rgba(5, 6, 10, 0.78) 100%
+    ),
+    radial-gradient(ellipse 70% 55% at 50% 40%, rgba(5, 6, 10, 0.2), rgba(5, 6, 10, 0.65));
 }
 
 .edHeroInner {
@@ -1319,6 +1411,12 @@ body:has(.galaxyShell) {
   gap: 16px;
   justify-items: center;
   text-align: center;
+}
+
+@media (min-width: 900px) {
+  .edHero {
+    background-position: center 28%;
+  }
 }
 
 .edHeroPhoto {
@@ -1351,6 +1449,7 @@ body:has(.galaxyShell) {
   line-height: 0.98;
   letter-spacing: -0.02em;
   color: #fff;
+  text-shadow: 0 4px 28px rgba(0, 0, 0, 0.55);
 }
 
 .edHeadline {
@@ -1360,13 +1459,15 @@ body:has(.galaxyShell) {
   font-size: clamp(1.4rem, 3vw, 2rem);
   color: var(--edAccent);
   max-width: 28ch;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
 }
 
 .edLead {
   max-width: 42ch;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.82);
   font-size: clamp(1.05rem, 2.2vw, 1.18rem);
   line-height: 1.65;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
 }
 
 .edHeroActions {
@@ -1424,33 +1525,70 @@ body:has(.galaxyShell) {
   min-height: 100svh;
   overflow: hidden;
   margin: 0;
+  background-color: #05070f;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
-.galaxyGateCanvas {
-  position: absolute;
-  inset: 0;
-  background: #05070f;
-}
-
-.galaxyGateCanvas canvas {
-  width: 100% !important;
-  height: 100% !important;
-  display: block;
+.galaxyGate.isEntering {
+  pointer-events: none;
 }
 
 .galaxyGateScrim {
   position: absolute;
   inset: 0;
+  z-index: 1;
   background:
-    radial-gradient(ellipse 70% 55% at 50% 45%, rgba(8, 10, 16, 0.15), rgba(8, 10, 16, 0.72));
+    linear-gradient(
+      180deg,
+      rgba(5, 7, 15, 0.28) 0%,
+      rgba(5, 7, 15, 0.38) 45%,
+      rgba(5, 7, 15, 0.68) 100%
+    ),
+    radial-gradient(ellipse 55% 50% at 50% 48%, rgba(5, 7, 15, 0.05), rgba(5, 7, 15, 0.62));
   pointer-events: none;
+}
+
+.galaxyGateSun {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  z-index: 2;
+  width: min(620px, 92vw);
+  height: min(620px, 92vw);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  filter: drop-shadow(0 0 48px rgba(255, 180, 80, 0.45));
+  mix-blend-mode: screen;
+}
+
+.galaxyGateSun canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.galaxyGate.isEntering .galaxyGateSun {
+  animation: galaxySunSurge 0.75s ease-out forwards;
+}
+
+@keyframes galaxySunSurge {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    filter: drop-shadow(0 0 48px rgba(255, 180, 80, 0.45));
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.55);
+    filter: drop-shadow(0 0 90px rgba(255, 210, 120, 0.85));
+  }
 }
 
 .galaxyGateHit {
   appearance: none;
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 3;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -1462,26 +1600,55 @@ body:has(.galaxyShell) {
 
 .galaxyGateCopy {
   display: grid;
-  gap: 14px;
   justify-items: center;
-  max-width: 28ch;
+  gap: 10px;
+  width: min(920px, 100%);
+}
+
+.galaxyGateOrbit {
+  margin: 0 0 4px;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(2.6rem, 9vw, 6.2rem);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.35),
+    0 12px 48px rgba(0, 0, 0, 0.55);
+  max-width: 12ch;
+}
+
+.galaxyGateTitleStack {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  min-height: clamp(4.5rem, 12vw, 7.5rem);
+  margin: clamp(8px, 2vw, 18px) 0;
 }
 
 .galaxyGateTitle {
+  position: relative;
+  z-index: 1;
+  margin: 0;
   font-family: var(--serif);
   font-weight: 400;
-  font-size: clamp(3.4rem, 10vw, 6.5rem);
+  font-size: clamp(2.4rem, 7vw, 4.8rem);
   line-height: 0.95;
   letter-spacing: -0.02em;
   color: #fff;
-  text-shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
+  text-shadow:
+    0 0 24px rgba(255, 190, 90, 0.35),
+    0 8px 40px rgba(0, 0, 0, 0.7);
 }
 
 .galaxyGateBody {
   font-size: clamp(1.05rem, 2.2vw, 1.25rem);
   line-height: 1.55;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.86);
   max-width: 28ch;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
 }
 
 .galaxyGateCta {
@@ -1491,6 +1658,29 @@ body:has(.galaxyShell) {
   text-transform: uppercase;
   color: var(--edAccent);
   font-weight: 700;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+}
+
+.galaxyGateFlash {
+  position: absolute;
+  inset: -10%;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 50% 52%,
+      rgba(255, 236, 190, 0.95) 0%,
+      rgba(255, 180, 90, 0.55) 28%,
+      rgba(8, 10, 16, 0.2) 58%,
+      rgba(8, 10, 16, 0.92) 100%
+    );
+}
+
+.galaxyGatePulse {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
 }
 
 .edFooterOrbit {
@@ -1684,23 +1874,31 @@ body:has(.galaxyShell) {
 
 .edResearchCols {
   display: grid;
-  gap: 14px;
-  margin: 22px auto 0;
+  gap: 28px 40px;
+  margin: 36px auto 0;
   width: min(920px, 100%);
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 @media (min-width: 720px) {
   .edResearchCols {
     grid-template-columns: repeat(3, 1fr);
+    gap: 0 48px;
+  }
+
+  .edFactCard + .edFactCard {
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+    padding-left: 48px;
   }
 }
 
 .edFactCard {
-  padding: 22px 18px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 0 0;
   text-align: center;
+  background: none;
+  border: none;
+  border-radius: 0;
 }
 
 .edMiniLabel {
@@ -1708,15 +1906,16 @@ body:has(.galaxyShell) {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--edAccent);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   font-weight: 600;
 }
 
 .edFactValue {
-  font-size: 1.08rem;
-  line-height: 1.4;
+  font-family: var(--serif);
+  font-size: clamp(1.15rem, 2.2vw, 1.35rem);
+  line-height: 1.35;
   color: #fff;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .edPathMarquee,
@@ -1780,6 +1979,138 @@ body:has(.galaxyShell) {
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
 }
 
+.edDeck {
+  width: min(1180px, calc(100% - 24px));
+  margin: 0 auto;
+}
+
+.edDeckStage {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: clamp(8px, 2vw, 18px);
+}
+
+.edDeckViewport {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  min-height: min(62svh, 560px);
+}
+
+.edDeckSlide {
+  width: 100%;
+}
+
+.edDeckCard {
+  width: 100%;
+  padding: 0;
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.edDeckCard .edProjectMedia {
+  width: 100%;
+  height: min(48vh, 420px);
+  min-height: 240px;
+  aspect-ratio: auto;
+  margin-bottom: 6px;
+  border-radius: 16px;
+}
+
+.edDeckArrow {
+  appearance: none;
+  width: clamp(42px, 5vw, 54px);
+  height: clamp(42px, 5vw, 54px);
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(8, 10, 14, 0.55);
+  color: #fff;
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  z-index: 2;
+}
+
+.edDeckArrow:hover {
+  background: rgba(212, 175, 55, 0.18);
+  border-color: var(--edAccent);
+  transform: scale(1.04);
+}
+
+.edDeckDots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.edDeckDot {
+  appearance: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.edDeckDot.isActive {
+  background: var(--edAccent);
+  transform: scale(1.25);
+}
+
+.edDeckHint {
+  text-align: center;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.38);
+  margin-top: 12px;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 640px) {
+  .edDeckStage {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .edDeckArrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+  }
+
+  .edDeckArrow.isPrev {
+    left: 6px;
+  }
+
+  .edDeckArrow.isNext {
+    right: 6px;
+  }
+
+  .edDeckArrow:hover {
+    transform: translateY(-50%) scale(1.04);
+  }
+
+  .edDeckViewport {
+    min-height: min(70svh, 620px);
+  }
+}
+
 .edProjectMedia {
   border-radius: 14px;
   overflow: hidden;
@@ -1789,11 +2120,45 @@ body:has(.galaxyShell) {
   display: grid;
   place-items: center;
   margin-bottom: 10px;
+  width: 100%;
 }
 
 .edProjectMedia img {
   width: 100%;
   height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.edProjectMedia.isFill {
+  width: 100%;
+  height: min(46vh, 380px);
+  aspect-ratio: auto;
+  min-height: 220px;
+}
+
+.edProjectMedia.isTone-logoLight {
+  background: #ffffff;
+}
+
+.edProjectMedia.isTone-logoLight img {
+  object-fit: contain;
+  object-position: center;
+  padding: clamp(18px, 4vw, 36px);
+}
+
+.edProjectMedia.isTone-logoDark {
+  background: #000000;
+}
+
+.edProjectMedia.isTone-logoDark img {
+  object-fit: contain;
+  object-position: center;
+  padding: clamp(18px, 4vw, 36px);
+}
+
+.edProjectMedia.isTone-photo img {
   object-fit: cover;
 }
 
@@ -2058,6 +2423,529 @@ body:has(.galaxyShell) {
 @media (prefers-reduced-motion: reduce) {
   .edPathMarqueeTrack,
   .edMarqueeTrack {
+    animation: none !important;
+  }
+}
+
+
+/* ── Website Idea 3 · Aikawa rebuild ── */
+
+.appShell.akShell,
+body:has(.akShell) {
+  background: var(--akStageBg, #f7f7f5);
+  color: var(--akStageInk, #111);
+}
+
+.akStage {
+  --akStageBg: #f7f7f5;
+  --akStageInk: #111111;
+  --akMuted: rgba(17, 17, 17, 0.55);
+  --akGlass: rgba(28, 28, 28, 0.72);
+  --akPanel: #111;
+  min-height: 100svh;
+  background: var(--akStageBg);
+  color: var(--akStageInk);
+  overflow-x: hidden;
+  padding-bottom: 120px;
+}
+
+.akStage.isDark {
+  --akStageBg: #0c0c0c;
+  --akStageInk: #f3f3f3;
+  --akMuted: rgba(243, 243, 243, 0.55);
+  --akGlass: rgba(255, 255, 255, 0.12);
+}
+
+.akLoad {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-content: center;
+  gap: 14px;
+  text-align: center;
+  background: var(--akStageBg);
+}
+
+.akLoadName {
+  font-family: var(--serif);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+}
+
+.akLoadPct {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95rem;
+  color: var(--akMuted);
+}
+
+.akTop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 18px clamp(16px, 3vw, 36px);
+  pointer-events: none;
+}
+
+.akTop > * {
+  pointer-events: auto;
+}
+
+.akTopLine {
+  font-size: clamp(0.78rem, 1.4vw, 0.92rem);
+  color: var(--akMuted);
+  max-width: 70vw;
+}
+
+.akTopName {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--akStageInk);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.akTopPct {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  color: var(--akMuted);
+}
+
+.akTopRight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.akTopGalaxy {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--akStageInk) 22%, transparent);
+  background: transparent;
+  color: var(--akStageInk);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.akTopGalaxy:hover {
+  border-color: var(--akStageInk);
+}
+
+.akHome {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 88px 16px 140px;
+  position: relative;
+}
+
+.akGiant {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(4.8rem, 18vw, 13rem);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  text-transform: capitalize;
+  white-space: nowrap;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.96;
+}
+
+.akCarousel {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 1100px);
+  height: min(58vh, 520px);
+  perspective: 1400px;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+}
+
+.akCarousel:active {
+  cursor: grabbing;
+}
+
+.akCarouselStage {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.akPanel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(42vw, 360px);
+  height: min(52vh, 460px);
+  border: none;
+  padding: 0;
+  overflow: hidden;
+  background: var(--akPanel);
+  color: #fff;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.22);
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease;
+}
+
+.akPanel img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.akPanel img.isCover { object-fit: cover; }
+.akPanel img.isContain { object-fit: contain; padding: 16%; }
+
+.akPanel.offset0 {
+  transform: translate(-50%, -50%) translateZ(180px) rotateY(0deg);
+  z-index: 5;
+  opacity: 1;
+}
+
+.akPanel.offset-1 {
+  transform: translate(-50%, -50%) translateX(-58%) translateZ(40px) rotateY(28deg);
+  z-index: 4;
+  opacity: 0.88;
+}
+
+.akPanel.offset1 {
+  transform: translate(-50%, -50%) translateX(58%) translateZ(40px) rotateY(-28deg);
+  z-index: 4;
+  opacity: 0.88;
+}
+
+.akPanel.offset-2 {
+  transform: translate(-50%, -50%) translateX(-98%) translateZ(-120px) rotateY(42deg);
+  z-index: 2;
+  opacity: 0.45;
+}
+
+.akPanel.offset2 {
+  transform: translate(-50%, -50%) translateX(98%) translateZ(-120px) rotateY(-42deg);
+  z-index: 2;
+  opacity: 0.45;
+}
+
+.akPanelLabel {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  font-family: var(--serif);
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+  text-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.akReflection {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 72%;
+  height: 42%;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.35), transparent 70%);
+  opacity: 0.45;
+  transform: scaleY(-1);
+}
+
+.akReflection .akPanel {
+  box-shadow: none;
+  filter: blur(0.2px) saturate(0.85);
+}
+
+.akFloat {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%) translateY(20px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+.akFloat.isOn {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.akFloatCore,
+.akFloatSide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  color: #f5f5f5;
+  background: var(--akGlass);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 10px 30px rgba(0, 0, 0, 0.22);
+}
+
+.akFloatSide {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.akFloatCore {
+  height: 56px;
+  padding: 6px 10px;
+  border-radius: 18px;
+  gap: 6px;
+}
+
+.akFloatArrow {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.akFloatCenter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  padding: 0 4px;
+  min-width: 148px;
+}
+
+.akFloatThumb {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.akFloatThumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.akFloatThumb img.isCover { object-fit: cover; }
+.akFloatThumb img.isContain { object-fit: contain; padding: 18%; }
+
+.akFloatText {
+  display: grid;
+  text-align: left;
+  gap: 2px;
+}
+
+.akFloatSub {
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.akFloatText strong {
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.akDetail {
+  width: min(1180px, calc(100% - 28px));
+  margin: 0 auto;
+  padding: 96px 0 40px;
+}
+
+.akDetailHead {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.akDetailEyebrow {
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--akMuted);
+  margin-bottom: 10px;
+}
+
+.akDetailTitle {
+  font-family: var(--serif);
+  font-size: clamp(3.4rem, 10vw, 7rem);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  margin-bottom: 14px;
+}
+
+.akDetailLead {
+  max-width: 28rem;
+  margin: 0 auto;
+  color: var(--akMuted);
+  font-size: 1.15rem;
+  line-height: 1.5;
+}
+
+.akDetailHero {
+  width: min(720px, 100%);
+  aspect-ratio: 16 / 10;
+  margin: 28px auto 40px;
+  overflow: hidden;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.18);
+}
+
+.akDetailHero img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.akDetailHero img.isCover { object-fit: cover; }
+.akDetailHero img.isContain { object-fit: contain; padding: 12%; }
+
+.akRoulette {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+}
+
+.akRouletteTrack {
+  display: flex;
+  gap: 18px;
+  width: max-content;
+  animation: akMarquee 48s linear infinite;
+}
+
+.akRoulette:hover .akRouletteTrack {
+  animation-play-state: paused;
+}
+
+@keyframes akMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.akFrame {
+  flex: 0 0 min(78vw, 340px);
+  display: grid;
+  gap: 12px;
+}
+
+.akFrameMedia {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #161616;
+}
+
+.akFrameMedia img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.akFrameMedia img.isCover { object-fit: cover; }
+.akFrameMedia img.isContain { object-fit: contain; padding: 14%; }
+
+.akFrameMeta {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--akMuted);
+}
+
+.akFrameTitle {
+  font-family: var(--serif);
+  font-size: 1.55rem;
+  line-height: 1.1;
+}
+
+.akFrameBody {
+  color: var(--akMuted);
+  line-height: 1.5;
+  font-size: 0.98rem;
+}
+
+.akDetailContact {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 48px;
+}
+
+.akDetailContact a,
+.akDetailContact .akGalaxyLink {
+  color: var(--akStageInk);
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, var(--akStageInk) 18%, transparent);
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-size: 0.95rem;
+}
+
+.akDetailContact .akGalaxyLink {
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+@media (max-width: 720px) {
+  .akGiant {
+    top: 14%;
+    font-size: clamp(3.4rem, 18vw, 5rem);
+  }
+
+  .akPanel {
+    width: min(58vw, 260px);
+    height: min(46vh, 360px);
+  }
+
+  .akFloatCore {
+    min-width: 0;
+  }
+
+  .akFloatText strong {
+    max-width: 88px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .akRouletteTrack {
     animation: none !important;
   }
 }

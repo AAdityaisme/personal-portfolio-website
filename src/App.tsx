@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { AikawaSite } from './components/AikawaSite';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { EditorialSite } from './components/EditorialSite';
 import { GlassBubble } from './components/GlassBubble';
 import { SmoothScroll } from './components/SmoothScroll';
 import type { FocusTarget } from './components/GalaxyScene';
@@ -12,9 +13,13 @@ const GalaxyScene = lazy(() =>
   import('./components/GalaxyScene').then((mod) => ({ default: mod.GalaxyScene }))
 );
 
-function isDesktopViewport() {
-  return typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches;
-}
+const guideLines = [
+  'Scroll to zoom in and out.',
+  'Drag to look around.',
+  'Click a glowing planet to see qualifications and experience.',
+] as const;
+
+const guideEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 function GalaxyMode({ onExit }: { onExit: () => void }) {
   const reducedMotion = useReducedMotion();
@@ -22,6 +27,9 @@ function GalaxyMode({ onExit }: { onExit: () => void }) {
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
   const [sceneFailed, setSceneFailed] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [guideStep, setGuideStep] = useState(0);
+  const [guideLineOn, setGuideLineOn] = useState(true);
+  const [guideDone, setGuideDone] = useState(false);
 
   const activeNode =
     focusedTarget === 'sun'
@@ -30,6 +38,7 @@ function GalaxyMode({ onExit }: { onExit: () => void }) {
         ? galaxyNodes[focusedTarget] ?? null
         : null;
   const showBubble = focusedTarget != null && !!activeNode;
+  const showGuide = focusedTarget == null && !guideDone && guideLineOn;
 
   const onAnchor = useCallback((screen: { x: number; y: number } | null) => {
     setAnchor(screen);
@@ -79,6 +88,39 @@ function GalaxyMode({ onExit }: { onExit: () => void }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (focusedTarget != null) setGuideDone(true);
+  }, [focusedTarget]);
+
+  useEffect(() => {
+    if (guideDone || reducedMotion) {
+      if (reducedMotion) setGuideDone(true);
+      return;
+    }
+
+    let alive = true;
+    const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+
+    (async () => {
+      for (let i = 0; i < guideLines.length; i++) {
+        if (!alive) return;
+        setGuideStep(i);
+        setGuideLineOn(true);
+        await wait(2000);
+        if (!alive) return;
+        await wait(1600);
+        if (!alive) return;
+        setGuideLineOn(false);
+        await wait(1600);
+      }
+      if (alive) setGuideDone(true);
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [guideDone, reducedMotion]);
+
   if (sceneFailed) {
     return (
       <div className="galaxyFallback">
@@ -93,7 +135,7 @@ function GalaxyMode({ onExit }: { onExit: () => void }) {
   }
 
   return (
-    <div className="galaxyMode">
+    <div className="galaxyMode galaxyModeEnter">
       <ErrorBoundary
         fallback={
           <div className="galaxyFallback">
@@ -119,12 +161,29 @@ function GalaxyMode({ onExit }: { onExit: () => void }) {
         </Suspense>
       </ErrorBoundary>
 
-      {focusedTarget == null ? (
-        <p className="orbitHint" aria-live="polite">
-          <span className="orbitHintPulse" aria-hidden="true" />
-          Drag to look · Click a glowing world
-        </p>
-      ) : null}
+      <div className="orbitSubtitleStage" aria-live="polite">
+        <AnimatePresence mode="wait">
+          {showGuide ? (
+            <motion.p
+              key={guideStep}
+              className="orbitSubtitle"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                transition: { duration: 2, ease: guideEase },
+              }}
+              exit={{
+                opacity: 0,
+                y: -8,
+                transition: { duration: 1.6, ease: guideEase },
+              }}
+            >
+              {guideLines[guideStep]}
+            </motion.p>
+          ) : null}
+        </AnimatePresence>
+      </div>
 
       {focusedTarget == null ? (
         <button type="button" className="orbitBack" onClick={onExit}>
@@ -145,9 +204,7 @@ function GalaxyMode({ onExit }: { onExit: () => void }) {
 }
 
 export default function App() {
-  const [mode, setMode] = useState<'site' | 'galaxy'>(() =>
-    isDesktopViewport() ? 'galaxy' : 'site'
-  );
+  const [mode, setMode] = useState<'site' | 'galaxy'>('site');
 
   useEffect(() => {
     recordVisit();
@@ -163,8 +220,8 @@ export default function App() {
 
   return (
     <SmoothScroll enabled>
-      <main className="appShell edShell">
-        <EditorialSite onEnterGalaxy={() => setMode('galaxy')} />
+      <main className="appShell akShell">
+        <AikawaSite onEnterGalaxy={() => setMode('galaxy')} />
       </main>
     </SmoothScroll>
   );

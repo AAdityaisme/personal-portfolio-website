@@ -150,10 +150,10 @@ function CameraRig({
       dampingFactor={0.08}
       rotateSpeed={0.65}
       zoomSpeed={0.85}
-      minDistance={8}
-      maxDistance={48}
-      minPolarAngle={0.25}
-      maxPolarAngle={Math.PI * 0.48}
+      minDistance={2.8}
+      maxDistance={56}
+      minPolarAngle={0.2}
+      maxPolarAngle={Math.PI * 0.5}
       target={overviewLookAt}
     />
   );
@@ -798,8 +798,10 @@ if (typeof window !== 'undefined' && window.innerWidth >= 720) {
     useGLTF.preload('./models/planet-alien.glb');
     useGLTF.preload('./models/planet-serendip.glb');
     useGLTF.preload('./models/planet-purple.glb');
-    useGLTF.preload('./models/planet-nine.glb');
-    useGLTF.preload('./models/planet-ringed.glb');
+    useGLTF.preload('./models/planet-techno.glb');
+    useGLTF.preload('./models/planet-jupiter.glb');
+    useGLTF.preload('./models/planet-lava.glb');
+    useGLTF.preload('./models/planet-jupiter-baxter.glb');
     useGLTF.preload('./models/spaceship.glb');
   };
   if (idle) idle(preloadRest);

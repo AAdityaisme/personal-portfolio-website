@@ -1,120 +1,134 @@
-import { Suspense, useMemo, useRef } from 'react';
+import { Suspense, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import * as THREE from 'three';
-import { galaxyNodes } from '../data/aadiData';
 import { ModelFit } from './ModelFit';
 import { SafeModel } from './SafeModel';
-
-function MiniSun() {
-  const spin = useRef<THREE.Group>(null);
-  useFrame(({ clock }) => {
-    if (spin.current) spin.current.rotation.y = clock.elapsedTime * 0.2;
-  });
-  return (
-    <group ref={spin}>
-      <SafeModel fallbackColor="#ffb347" fallbackSize={1.15}>
-        <ModelFit url="./models/sun.glb" targetSize={1.15} />
-      </SafeModel>
-      <pointLight color="#ffc878" intensity={3} distance={8} />
-    </group>
-  );
-}
-
-function MiniPlanet({
-  radius,
-  speed,
-  size,
-  model,
-  accent,
-  phase,
-}: {
-  radius: number;
-  speed: number;
-  size: number;
-  model: string;
-  accent: string;
-  phase: number;
-}) {
-  const group = useRef<THREE.Group>(null);
-  useFrame(({ clock }) => {
-    if (!group.current) return;
-    const a = phase + clock.elapsedTime * speed;
-    group.current.position.set(Math.cos(a) * radius, Math.sin(a * 0.4) * 0.12, Math.sin(a) * radius);
-    group.current.rotation.y = clock.elapsedTime * 0.4;
-  });
-  return (
-    <group ref={group}>
-      <SafeModel fallbackColor={accent} fallbackSize={size}>
-        <ModelFit url={model} targetSize={size} />
-      </SafeModel>
-    </group>
-  );
-}
-
-function MiniScene() {
-  const planets = useMemo(
-    () =>
-      galaxyNodes.slice(0, 7).map((n, i) => ({
-        id: n.id,
-        radius: 1.5 + i * 0.48,
-        speed: 0.18 + (i % 3) * 0.05,
-        size: 0.32 + (n.size % 0.3) * 0.4,
-        model: n.model,
-        accent: n.accent,
-        phase: i * 0.9,
-      })),
-    []
-  );
-
-  return (
-    <>
-      <color attach="background" args={['#05070f']} />
-      <ambientLight intensity={0.45} />
-      <directionalLight position={[3, 4, 2]} intensity={0.9} color="#fff2d8" />
-      <MiniSun />
-      {planets.map((p) => (
-        <MiniPlanet key={p.id} {...p} />
-      ))}
-    </>
-  );
-}
 
 type Props = {
   onEnter: () => void;
 };
 
-/** Full-viewport Enter Galaxy CTA — same typography language as the site. */
-export function MiniGalaxy({ onEnter }: Props) {
+const easeOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+function FastSpinSun({ boost }: { boost: boolean }) {
+  const group = useRef<THREE.Group>(null);
+  useFrame((_, delta) => {
+    if (!group.current) return;
+    const speed = boost ? 1.8 : 0.55;
+    group.current.rotation.y += delta * speed;
+    group.current.rotation.x += delta * speed * 0.12;
+  });
   return (
-    <section className="galaxyGate" aria-label="Enter galaxy mode">
-      <div className="galaxyGateCanvas" aria-hidden="true">
+    <group ref={group}>
+      <SafeModel fallbackColor="#ffb347" fallbackSize={2.4}>
+        <ModelFit url="./models/sun.glb" targetSize={2.4} />
+      </SafeModel>
+      <pointLight color="#ffc878" intensity={boost ? 6 : 3.6} distance={12} />
+    </group>
+  );
+}
+
+/** Full-viewport Enter Galaxy CTA — big orbit label, spinning sun behind title. */
+export function MiniGalaxy({ onEnter }: Props) {
+  const [entering, setEntering] = useState(false);
+
+  const handleEnter = () => {
+    if (entering) return;
+    setEntering(true);
+    window.setTimeout(() => onEnter(), 780);
+  };
+
+  return (
+    <section
+      className={`galaxyGate ${entering ? 'isEntering' : ''}`}
+      aria-label="Enter galaxy mode"
+      style={{ backgroundImage: 'url(./images/galaxy-gate.png)' }}
+    >
+      <div className="galaxyGateScrim" aria-hidden="true" />
+
+      <div className="galaxyGateSun" aria-hidden="true">
         <Canvas
           dpr={[1, 1.5]}
-          camera={{ position: [5.2, 3.2, 6.4], fov: 40 }}
-          gl={{ antialias: true, alpha: false }}
+          camera={{ position: [0, 0, 4.2], fov: 40 }}
+          gl={{ antialias: true, alpha: true }}
         >
+          <ambientLight intensity={0.4} />
+          <directionalLight position={[2, 2, 3]} intensity={1.1} color="#fff2d0" />
           <Suspense fallback={null}>
-            <MiniScene />
+            <FastSpinSun boost={entering} />
           </Suspense>
         </Canvas>
       </div>
-      <div className="galaxyGateScrim" aria-hidden="true" />
-      <button type="button" className="galaxyGateHit" onClick={onEnter}>
+
+      <button type="button" className="galaxyGateHit" onClick={handleEnter}>
         <motion.div
           className="galaxyGateCopy"
-          animate={{ opacity: [0.72, 1, 0.72], y: [0, -6, 0] }}
-          transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
+          initial={{ opacity: 0, y: 36 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.35 }}
+          transition={{ duration: 1.2, ease: easeOut }}
         >
-          <p className="edEyebrow">Interactive orbit</p>
-          <h2 className="galaxyGateTitle">Enter Galaxy</h2>
-          <p className="galaxyGateBody">
+          <motion.p
+            className="galaxyGateOrbit"
+            animate={
+              entering
+                ? { opacity: 0, y: -28, scale: 1.08 }
+                : { opacity: [0.88, 1, 0.88], y: [0, -6, 0] }
+            }
+            transition={
+              entering
+                ? { duration: 0.55, ease: easeOut }
+                : { duration: 5.2, repeat: Infinity, ease: 'easeInOut' }
+            }
+          >
+            Interactive orbit
+          </motion.p>
+
+          <div className="galaxyGateTitleStack">
+            <motion.h2
+              className="galaxyGateTitle"
+              animate={
+                entering
+                  ? { opacity: 0, scale: 1.35, filter: 'blur(8px)' }
+                  : { opacity: 1, scale: 1, filter: 'blur(0px)' }
+              }
+              transition={{ duration: 0.7, ease: easeOut }}
+            >
+              Enter Galaxy
+            </motion.h2>
+          </div>
+
+          <motion.p
+            className="galaxyGateBody"
+            animate={entering ? { opacity: 0, y: 18 } : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+          >
             Full 3D orbit — drag, look around, open any world.
-          </p>
-          <span className="galaxyGateCta">Tap anywhere to enter</span>
+          </motion.p>
+          <motion.span
+            className="galaxyGateCta"
+            animate={entering ? { opacity: 0 } : { opacity: 1 }}
+            transition={{ duration: 0.35 }}
+          >
+            Tap anywhere to enter
+          </motion.span>
         </motion.div>
       </button>
+
+      <AnimatePresence>
+        {entering ? (
+          <motion.div
+            className="galaxyGateFlash"
+            aria-hidden="true"
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: [0, 0.85, 1], scale: [0.7, 1.15, 1.45] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.75, ease: easeOut }}
+          />
+        ) : null}
+      </AnimatePresence>
     </section>
   );
 }

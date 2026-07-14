@@ -1,5 +1,5 @@
-import { useRef, type ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { useRef, useState, type TouchEvent } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { profile, projects, type ProjectCard } from '../data/editorialData';
 import { MasteryBoard } from './MasteryBoard';
 import { MiniGalaxy } from './MiniGalaxy';
@@ -12,11 +12,13 @@ type Props = {
 const easeOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 const fadeUp = {
-  initial: { opacity: 0, y: 28 },
+  initial: { opacity: 0, y: 36 },
   whileInView: { opacity: 1, y: 0 },
-  viewport: { once: false, amount: 0.22 as const },
-  transition: { duration: 0.65, ease: easeOut },
+  viewport: { once: false, amount: 0.18 as const },
+  transition: { duration: 1.15, ease: easeOut },
 };
+
+const deckSpring = { type: 'spring' as const, stiffness: 260, damping: 32, mass: 0.9 };
 
 function SectionLabel({ children }: { children: string }) {
   return <p className="edLabel">{children}</p>;
@@ -42,40 +44,139 @@ function PhotoBand({
   );
 }
 
-function InfiniteTrack({
-  items,
-  className,
-  renderItem,
-  hint,
-}: {
-  items: ProjectCard[];
-  className: string;
-  renderItem: (item: ProjectCard, i: number) => ReactNode;
-  hint: string;
-}) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const loop = [...items, ...items];
-
+function ProjectSlide({ p }: { p: ProjectCard }) {
+  const tone = p.imageTone ?? 'photo';
   return (
-    <motion.div
-      className={className}
-      {...fadeUp}
-      onMouseEnter={() => trackRef.current?.classList.add('isPaused')}
-      onMouseLeave={() => trackRef.current?.classList.remove('isPaused')}
-    >
-      <div className={`${className}Track`} ref={trackRef}>
-        {loop.map((item, i) => renderItem(item, i))}
+    <article className="edDeckCard">
+      {p.image ? (
+        <div className={`edProjectMedia isFill isTone-${tone}`}>
+          <img src={p.image} alt="" loading="lazy" />
+        </div>
+      ) : (
+        <div className="edProjectMedia isPlaceholder" aria-hidden="true">
+          <span>{p.kicker}</span>
+        </div>
+      )}
+      <p className="edProjectKicker">{p.kicker}</p>
+      <h3 className="edProjectTitle">{p.title}</h3>
+      <p className="edProjectBody">{p.body}</p>
+      <ul className="edProjectTags">
+        {p.tags.map((t) => (
+          <li key={t}>{t}</li>
+        ))}
+      </ul>
+      <div className="edProjectLinks">
+        {p.links.map((l) => (
+          <a
+            key={l.href + l.label}
+            href={l.href}
+            target={l.href.startsWith('mailto:') ? undefined : '_blank'}
+            rel={l.href.startsWith('mailto:') ? undefined : 'noopener noreferrer'}
+          >
+            {l.label}
+          </a>
+        ))}
       </div>
-      <p className="edMarqueeHint">{hint}</p>
-    </motion.div>
+    </article>
   );
 }
 
-function FactCard({ label, value }: { label: string; value: string }) {
+function ProjectDeck({ items }: { items: ProjectCard[] }) {
+  const [index, setIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
+  const touchX = useRef<number | null>(null);
+
+  const go = (next: number, dir: number) => {
+    const len = items.length;
+    const wrapped = ((next % len) + len) % len;
+    setDirection(dir);
+    setIndex(wrapped);
+  };
+
+  const onTouchStart = (e: TouchEvent) => {
+    touchX.current = e.touches[0].clientX;
+  };
+
+  const onTouchEnd = (e: TouchEvent) => {
+    if (touchX.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    touchX.current = null;
+    if (Math.abs(dx) < 48) return;
+    if (dx < 0) go(index + 1, 1);
+    else go(index - 1, -1);
+  };
+
   return (
-    <motion.div className="edFactCard" {...fadeUp}>
-      <p className="edMiniLabel">{label}</p>
-      <p className="edFactValue">{value}</p>
+    <motion.div className="edDeck" {...fadeUp}>
+      <div
+        className="edDeckStage"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        <button
+          type="button"
+          className="edDeckArrow isPrev"
+          aria-label="Previous project"
+          onClick={() => go(index - 1, -1)}
+        >
+          ‹
+        </button>
+
+        <div className="edDeckViewport">
+          <AnimatePresence mode="popLayout" custom={direction} initial={false}>
+            <motion.div
+              key={items[index].id}
+              className="edDeckSlide"
+              custom={direction}
+              variants={{
+                enter: (dir: number) => ({
+                  x: dir >= 0 ? '72%' : '-72%',
+                  opacity: 0,
+                  scale: 0.96,
+                }),
+                center: { x: 0, opacity: 1, scale: 1 },
+                exit: (dir: number) => ({
+                  x: dir >= 0 ? '-72%' : '72%',
+                  opacity: 0,
+                  scale: 0.96,
+                }),
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={deckSpring}
+            >
+              <ProjectSlide p={items[index]} />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <button
+          type="button"
+          className="edDeckArrow isNext"
+          aria-label="Next project"
+          onClick={() => go(index + 1, 1)}
+        >
+          ›
+        </button>
+      </div>
+
+      <div className="edDeckDots" role="tablist" aria-label="Project slides">
+        {items.map((item, i) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={i === index}
+            className={`edDeckDot ${i === index ? 'isActive' : ''}`}
+            aria-label={`Show ${item.title}`}
+            onClick={() => go(i, i > index ? 1 : -1)}
+          />
+        ))}
+      </div>
+      <p className="edDeckHint">
+        {index + 1} / {items.length} · arrows or swipe
+      </p>
     </motion.div>
   );
 }
@@ -83,12 +184,16 @@ function FactCard({ label, value }: { label: string; value: string }) {
 export function EditorialSite({ onEnterGalaxy }: Props) {
   return (
     <div className="edPage">
-      <header className="edHero">
+      <header
+        className="edHero"
+        style={{ backgroundImage: 'url(./images/hero-nebula.png)' }}
+      >
+        <div className="edHeroScrim" aria-hidden="true" />
         <motion.div
           className="edHeroInner"
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, ease: easeOut }}
+          transition={{ duration: 1.25, ease: easeOut }}
         >
           <img
             src="./images/aadi-hero.png"
@@ -172,11 +277,6 @@ export function EditorialSite({ onEnterGalaxy }: Props) {
           <p className="edStoryKicker">INDEPENDENT · 2026 – PRESENT</p>
           <h3 className="edResearchTitle">AI Evaluation Integrity</h3>
         </motion.div>
-        <div className="edResearchCols">
-          <FactCard label="Focus" value="Silent errors past leaderboards" />
-          <FactCard label="Lens" value="Routing, bias, governance" />
-          <FactCard label="Status" value="Active independent research" />
-        </div>
       </section>
 
       <PhotoBand
@@ -197,56 +297,15 @@ export function EditorialSite({ onEnterGalaxy }: Props) {
             Founding, evaluation, GTM, campus ops — the work that keeps the orbit spinning.
           </p>
         </motion.div>
-        <InfiniteTrack
-          items={projects}
-          className="edMarquee"
-          hint="Scrolls automatically · hover to pause"
-          renderItem={(p, i) => (
-            <article key={`${p.id}-${i}`} className="edProjectCard">
-              {p.image ? (
-                <div
-                  className={`edProjectMedia ${p.id === 'startup' ? 'isTicket' : ''} ${
-                    p.id === 'corgi' ? 'isCorgi' : ''
-                  } ${p.id === 'openai' || p.id === 'finance' ? 'isLogo' : ''}`}
-                >
-                  <img src={p.image} alt="" loading="lazy" />
-                </div>
-              ) : (
-                <div className="edProjectMedia isPlaceholder" aria-hidden="true">
-                  <span>{p.kicker}</span>
-                </div>
-              )}
-              <p className="edProjectKicker">{p.kicker}</p>
-              <h3 className="edProjectTitle">{p.title}</h3>
-              <p className="edProjectBody">{p.body}</p>
-              <ul className="edProjectTags">
-                {p.tags.map((t) => (
-                  <li key={t}>{t}</li>
-                ))}
-              </ul>
-              <div className="edProjectLinks">
-                {p.links.map((l) => (
-                  <a
-                    key={l.href + l.label}
-                    href={l.href}
-                    target={l.href.startsWith('mailto:') ? undefined : '_blank'}
-                    rel={l.href.startsWith('mailto:') ? undefined : 'noopener noreferrer'}
-                  >
-                    {l.label}
-                  </a>
-                ))}
-              </div>
-            </article>
-          )}
-        />
+        <ProjectDeck items={projects} />
       </section>
 
       <SkillsBoard />
 
       <PhotoBand
-        image="./images/sf-bridge-dusk.png"
+        image="./images/sf-bay-bridge-night.png"
         quote="Ship systems people can trust when it matters."
-        caption="GOLDEN GATE · DUSK"
+        caption="BAY BRIDGE · SAN FRANCISCO"
       />
 
       <section className="edSection" id="contact">
@@ -278,7 +337,9 @@ export function EditorialSite({ onEnterGalaxy }: Props) {
       </section>
 
       <motion.footer className="edFooter" {...fadeUp}>
-        <p>© {new Date().getFullYear()} {profile.name}</p>
+        <p>
+          © {new Date().getFullYear()} {profile.name}
+        </p>
         <button type="button" className="edFooterOrbit" onClick={onEnterGalaxy}>
           Enter Galaxy ↗
         </button>

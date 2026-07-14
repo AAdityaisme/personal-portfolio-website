@@ -9,6 +9,7 @@ export type ProjectCard = {
   body: string;
   tags: string[];
   image?: string;
+  imageTone?: 'photo' | 'logoLight' | 'logoDark';
   links: { label: string; href: string }[];
 };
 
@@ -34,6 +35,7 @@ export const projects: ProjectCard[] = [
     body: 'Stealth AI product with active investor conversations, and YC Startup School in San Francisco.',
     tags: ['AI Product', 'Founder', 'YC SS 2026'],
     image: './images/yc-ticket.png',
+    imageTone: 'logoLight',
     links: [
       { label: 'YC Startup School ↗', href: 'https://www.startupschool.org/' },
       { label: 'LinkedIn ↗', href: profile.linkedin },
@@ -41,19 +43,25 @@ export const projects: ProjectCard[] = [
   },
   {
     id: 'research',
-    kicker: 'INDEPENDENT RESEARCH',
+    kicker: 'OPENAI · EVALUATION',
     title: 'AI Evaluation Integrity',
-    body: 'How gatekeeper systems pass benchmarks while hiding the errors that matter in the real world.',
-    tags: ['LLM Eval', 'Governance', 'Routing'],
-    links: [{ label: 'LinkedIn ↗', href: profile.linkedin }],
+    body: 'How gatekeeper systems pass benchmarks while hiding the errors that matter in the real world — work connected to OpenAI evaluation.',
+    tags: ['OpenAI', 'LLM Eval', 'Governance'],
+    image: './images/openai-logo.png',
+    imageTone: 'logoLight',
+    links: [
+      { label: 'OpenAI ↗', href: 'https://openai.com/' },
+      { label: 'LinkedIn ↗', href: profile.linkedin },
+    ],
   },
   {
     id: 'corgi',
-    kicker: 'GTM · VENTURE-BACKED',
-    title: 'GTM @ Corgi',
-    body: 'Growth, positioning, and go-to-market for a venture-backed Bay Area startup.',
-    tags: ['GTM', 'Positioning', 'Growth'],
-    image: './images/corgi.png',
+    kicker: 'GO-TO-MARKET · VENTURE-BACKED',
+    title: 'Go-To-Market @ Corgi',
+    body: 'Growth, positioning, and go-to-market (GTM) for a venture-backed Bay Area startup.',
+    tags: ['Go-To-Market', 'Positioning', 'Growth'],
+    image: './images/corgi-logo.png',
+    imageTone: 'logoLight',
     links: [
       { label: 'Email Aadi ↗', href: `mailto:${profile.email}` },
       { label: 'LinkedIn ↗', href: profile.linkedin },
@@ -65,7 +73,8 @@ export const projects: ProjectCard[] = [
     title: 'AI Evaluation Specialist',
     body: 'Selected into a specialized evaluation track after four-step screening — 40-person frontier team.',
     tags: ['OpenAI', 'Evaluation', 'Frontier'],
-    image: './images/openai-mark.png',
+    image: './images/openai-logo.png',
+    imageTone: 'logoLight',
     links: [
       { label: 'OpenAI ↗', href: 'https://openai.com/' },
       { label: 'LinkedIn ↗', href: profile.linkedin },
@@ -77,15 +86,18 @@ export const projects: ProjectCard[] = [
     title: 'Mangusta Capital',
     body: 'Sources early-stage startups and evaluates market, team, and traction signals.',
     tags: ['Venture', 'Diligence', 'Thesis'],
+    image: './images/mangusta-logo.png',
+    imageTone: 'logoDark',
     links: [{ label: 'LinkedIn ↗', href: profile.linkedin }],
   },
   {
     id: 'finance',
-    kicker: 'CAMPUS FINANCE',
-    title: '100+ Student Organizations',
-    body: 'Funding requests, grants, and scholarship infrastructure across ICC, Rotary, and AGS.',
-    tags: ['ICC', 'Rotary', 'AGS'],
-    image: './images/ags.png',
+    kicker: 'ALPHA GAMMA SIGMA',
+    title: 'President · Alpha Gamma Sigma',
+    body: 'President of Alpha Gamma Sigma Honor Society — leading campus honors, finance ops, and scholarship infrastructure across student organizations.',
+    tags: ['AGS', 'President', 'Campus Leadership'],
+    image: './images/ags-seal.png',
+    imageTone: 'logoLight',
     links: [
       { label: 'AGS ↗', href: 'https://www.ags.org/' },
       { label: 'LinkedIn ↗', href: profile.linkedin },

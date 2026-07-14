@@ -12,10 +12,11 @@ export function SmoothScroll({ children, enabled = true }: Props) {
     if (!enabled) return;
 
     const lenis = new Lenis({
-      duration: 1.35,
+      duration: 1.85,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
-      touchMultiplier: 1.1,
+      touchMultiplier: 1,
+      wheelMultiplier: 0.85,
     });
 
     let frame = 0;
