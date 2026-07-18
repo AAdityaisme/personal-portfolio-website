@@ -4,8 +4,9 @@ import * as THREE from 'three';
 import type { OrbitCategory } from '../../data/aikawaData';
 import {
   GRID_CELLS,
-  SELECT_RECT,
   STRIP,
+  selectRect,
+  stripWidthFraction,
   wrapOffset,
   type MotionState,
 } from '../../lib/motion/constants';
@@ -27,14 +28,23 @@ type SceneProps = {
 
 const lerp = THREE.MathUtils.lerp;
 const clamp = THREE.MathUtils.clamp;
+const smoothstepNum = (edge0: number, edge1: number, x: number) =>
+  THREE.MathUtils.smoothstep(x, edge0, edge1);
 
-function fitScale(tex: THREE.Texture, fit: 'cover' | 'contain', panelAspect: number) {
-  const img = tex.image as { width?: number; height?: number } | undefined;
-  const imgAspect = img?.width && img?.height ? img.width / img.height : panelAspect;
+/**
+ * uv scale that crops (cover) or letterboxes (contain) an image into a panel
+ * of the given on-screen aspect. Computed per frame so non-uniform panel
+ * scaling (grid cells, selection, morphs) never stretches the picture.
+ */
+function fitScale(
+  imgAspect: number,
+  fit: 'cover' | 'contain',
+  panelAspect: number
+): readonly [number, number] {
   if (fit === 'contain') {
     const m = 0.82;
     if (imgAspect > panelAspect) return [1 / m, imgAspect / (m * panelAspect)] as const;
-    return [(panelAspect / imgAspect) * (1 / m), 1 / m] as const;
+    return [panelAspect / (imgAspect * m), 1 / m] as const;
   }
   if (imgAspect > panelAspect) return [panelAspect / imgAspect, 1] as const;
   return [1, imgAspect / panelAspect] as const;
@@ -63,13 +73,20 @@ function Panel({
   const hoverAmt = useRef(0);
   const { viewport } = useThree();
 
-  const W = viewport.width * STRIP.width;
+  const W = viewport.width * stripWidthFraction();
   const H = W * STRIP.aspect;
-  const radius = W / 2 / (STRIP.curve / 2);
+  // Reference geometry: cards span the full cylinder — angleStep = 2π/count,
+  // radius chosen so adjacent cards (plus gap) nearly touch on the arc.
+  const angleStep = (Math.PI * 2) / count;
+  const radius = (W * (1 + STRIP.gap)) / angleStep;
   const panelAspect = W / H;
 
   const bg = useMemo(() => new THREE.Color(category.imageBg ?? '#e8e6e1'), [category.imageBg]);
-  const [fitX, fitY] = fitScale(texture, category.imageFit, panelAspect);
+  const imgAspect = useMemo(() => {
+    const img = texture.image as { width?: number; height?: number } | undefined;
+    return img?.width && img?.height ? img.width / img.height : panelAspect;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [texture]);
 
   const panelUniforms = useMemo(
     () => ({
@@ -83,6 +100,8 @@ function Panel({
       uRadius: { value: radius },
       uPointer: { value: new THREE.Vector2(-10, -10) },
       uHoverStrength: { value: 0 },
+      uGlassEdge: { value: 0 },
+      uGlassPointer: { value: 0 },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [texture]
@@ -116,13 +135,18 @@ function Panel({
     const isActive = Math.abs(offset) < 0.5;
     const isSelected = index === ms.selectedIndex;
 
-    // --- Carousel pose ------------------------------------------------------
-    const ao = Math.abs(offset);
-    const cX = offset * W * STRIP.spread;
-    const cYaw = -clamp(offset, -1.6, 1.6) * STRIP.yaw;
-    const cZ = -Math.min(ao, 2) * W * 0.24;
-    const cScale = 1 - Math.min(ao, 1) * 0.09 - clamp(ao - 1, 0, 1) * 0.12;
-    let opacity = ao <= 1 ? 1 - ao * 0.18 : Math.max(0, 0.82 - (ao - 1) * 0.95);
+    // --- Cylinder pose (reference: angle = offset*step, axis at z = −radius) --
+    const theta = clamp(offset, -count / 2, count / 2) * angleStep;
+    const span = W * (1 + STRIP.gap);
+    // Flat filmstrip pose (splash) blends into the wrapped cylinder pose.
+    const wv = ms.wrap.value;
+    const cX = lerp(offset * span, Math.sin(theta) * radius, wv);
+    const cZ = lerp(0, (Math.cos(theta) - 1) * radius, wv);
+    const cYaw = -theta * wv;
+    const cScale = 1;
+    // Cards behind the cylinder's equator fade so they never ghost through.
+    const behind = smoothstepNum(Math.PI * 0.52, Math.PI * 0.72, Math.abs(theta) * wv);
+    let opacity = 1 - behind;
     if (!isActive) opacity *= ms.reveal.value;
 
     // --- Grid pose ----------------------------------------------------------
@@ -147,11 +171,12 @@ function Panel({
     // --- Selection pose -----------------------------------------------------
     if (sv > 0.001) {
       if (isSelected) {
-        x = lerp(x, (SELECT_RECT.cx - 0.5) * vpW, sv);
-        y = lerp(y, (0.5 - SELECT_RECT.cy) * vpH, sv);
+        const sr = selectRect();
+        x = lerp(x, (sr.cx - 0.5) * vpW, sv);
+        y = lerp(y, (0.5 - sr.cy) * vpH, sv);
         z = lerp(z, 0.01, sv);
-        sx = lerp(sx, (SELECT_RECT.w * vpW) / W, sv);
-        sy = lerp(sy, (SELECT_RECT.h * vpH) / H, sv);
+        sx = lerp(sx, (sr.w * vpW) / W, sv);
+        sy = lerp(sy, (sr.h * vpH) / H, sv);
         opacity = lerp(opacity, 1, sv);
         brightness = lerp(brightness, 1, sv);
       } else {
@@ -198,8 +223,16 @@ function Panel({
     // R3F clones the uniforms prop at construction, so write through the
     // material refs — the memo objects only seed the initial values.
     const curvature = ms.curvature.value * (1 - gv) * ms.debug.curveAmount;
+    // Fit the image to the panel's CURRENT on-screen aspect so grid cells,
+    // selection and morphs crop instead of stretching the picture.
+    const effAspect = (W * sx) / (H * sy);
+    const [fitX, fitY] = fitScale(imgAspect, category.imageFit, effAspect);
+
     const pu = panelMat.current.uniforms as typeof panelUniforms;
-    pu.uCurvature.value = curvature;
+    // Surface bend radius equals the cylinder radius so wrapped cards read
+    // as one continuous drum; bend follows the wrap blend during the intro.
+    pu.uRadius.value = radius;
+    pu.uCurvature.value = curvature * wv;
     pu.uOpacity.value = opacity;
     pu.uBrightness.value = brightness;
     pu.uScale.value.set(fitX, fitY);
@@ -209,9 +242,14 @@ function Panel({
       hv > 0.01 ? ms.pointerUv.x : -10,
       hv > 0.01 ? ms.pointerUv.y : -10
     );
+    // Integrated card glass: edge highlight always faint; pointer specular
+    // only while hovering the front card (reference card:glass:edge ≈ 0.34).
+    pu.uGlassEdge.value = 0.34 * (1 - gv) * opacity * (isActive ? 1 : 0.5);
+    pu.uGlassPointer.value = curvedHover ? 0.12 * hv : 0;
 
     const mu = mirrorMat.current.uniforms as typeof mirrorUniforms;
-    mu.uCurvature.value = curvature;
+    mu.uRadius.value = radius;
+    mu.uCurvature.value = curvature * wv;
     mu.uScale.value.set(fitX, fitY);
     mu.uShift.value.copy(pu.uShift.value);
     const hoverDim = curvedHover ? lerp(1, 0.17 / 0.22, hv) : 1;

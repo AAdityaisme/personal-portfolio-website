@@ -4,14 +4,15 @@ import { orbitCategories, profile } from '../../data/aikawaData';
 import {
   GRID_CELLS,
   MOTION,
-  SELECT_RECT,
   STRIP,
   createMotionState,
+  prefersReducedMotion,
+  selectRect,
+  stripWidthFraction,
   wrapOffset,
   type Scene,
 } from '../../lib/motion/constants';
 import { Loader } from './Loader';
-import { JourneyScene } from './JourneyScene';
 import { PortfolioCanvas, type PanelPointerEvent } from './PortfolioCanvas';
 import { MosaicTransition } from './MosaicTransition';
 import { WorkScene } from './WorkScene';
@@ -39,8 +40,6 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
   const [scene, setScene] = useState<Scene>('loading');
   const [loadPct, setLoadPct] = useState(0);
   const [loaderGone, setLoaderGone] = useState(false);
-  const [journeyOn, setJourneyOn] = useState(false);
-  const [leavingJourney, setLeavingJourney] = useState(false);
   const [canvasOn, setCanvasOn] = useState(false);
   const [canvasVisible, setCanvasVisible] = useState(false);
   const [workOn, setWorkOn] = useState(false);
@@ -49,7 +48,6 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
   const [activeIndex, setActiveIndex] = useState(INITIAL_INDEX);
   const [selectedIndex, setSelectedIndex] = useState(INITIAL_INDEX);
   const [resetKey, setResetKey] = useState(0);
-  const [journeyKey, setJourneyKey] = useState(0);
   const [workKey, setWorkKey] = useState(0);
   const [mosaicKey, setMosaicKey] = useState(0);
 
@@ -68,7 +66,9 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
   const labelEl = useRef<HTMLParagraphElement>(null);
   const shadowEl = useRef<HTMLDivElement>(null);
   const badgeEl = useRef<HTMLDivElement>(null);
-  const drag = useRef({ on: false, moved: false, startX: 0, base: 0 });
+  const drag = useRef({ on: false, moved: false, startX: 0, base: 0, lastX: 0, lastT: 0, vel: 0 });
+  /** Inertial carousel spin: velocity in panels/second, decays until snap. */
+  const spin = useRef({ vel: 0, settled: true });
   const badge = useRef({ x: 0, y: 0, tx: 0, ty: 0, visible: false });
   const hoverSim = useRef(false);
 
@@ -111,61 +111,99 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
   }, []);
   const stripPx = useMemo(() => {
     void viewportTick;
-    const w = STRIP.width * window.innerWidth;
+    const w = stripWidthFraction() * window.innerWidth;
     const h = w * STRIP.aspect;
     return { w, h, bottom: STRIP.centerY * window.innerHeight + h / 2 };
   }, [viewportTick]);
 
-  // --- Scene transitions ----------------------------------------------------
-  const handleLoaderReveal = useCallback(() => {
-    setJourneyOn(true);
-    setScene('journey');
-  }, []);
+  // --- Intro: the opening is NOT a category page -----------------------------
+  // Loader dissolves → every category's photograph enters as a flat filmstrip
+  // → the strip wraps onto the cylinder and orbits through the front, slowing
+  // → reflection, giant title, identity line and dock resolve → user chooses.
+  // One master timeline, replayable and scrubbable from the debug panel.
+  const introTl = useRef<gsap.core.Timeline | null>(null);
 
-  const toPortfolio = useCallback(() => {
-    if (lock.current || sceneRef.current !== 'journey') return;
+  const startIntro = useCallback(() => {
     lock.current = true;
-    setScene('journey-to-portfolio');
-    setLeavingJourney(true);
+    setScene('intro');
     setCanvasOn(true);
+    setCanvasVisible(true);
+    setDockVisible(false);
 
+    // Start upstream on the cylinder: just over one full turn away, flat.
+    ms.wrap.value = 0;
+    ms.curvature.value = 1;
+    ms.reveal.value = 1;
+    ms.reflection.value = 0;
+    ms.grid.value = 0;
+    ms.select.value = 0;
+    ms.panelHidden = false;
+    ms.active.value = INITIAL_INDEX + count * 1.18;
+    activeFloat.current = INITIAL_INDEX;
+    setActiveIndex(INITIAL_INDEX);
+
+    introTl.current?.kill();
     const tl = gsap.timeline({
+      defaults: { ease: MOTION.easeInOut },
       onComplete: () => {
         lock.current = false;
         setScene('portfolio-curved');
-        setJourneyOn(false);
-        setLeavingJourney(false);
       },
     });
-    tl.call(() => setCanvasVisible(true), undefined, 0.42);
-    tl.to(ms.curvature, { value: 1, duration: 0.6, ease: MOTION.easeInOut }, 0.45);
-    tl.to(ms.reveal, { value: 1, duration: 0.5, ease: MOTION.easeOut }, 0.55);
-    tl.to(ms.reflection, { value: 1, duration: 0.55, ease: MOTION.easeOut }, 0.55);
+    introTl.current = tl;
+
+    tl.addLabel('photosEnter', 0);
+    // Photographs sweep through the viewport — first flat, then orbiting —
+    // decelerating through slightly more than one full revolution.
+    tl.to(ms.active, { value: INITIAL_INDEX, duration: 3.6, ease: 'power3.inOut' }, 0);
+    tl.addLabel('orbitBegins', 0.75);
+    tl.to(ms.wrap, { value: 1, duration: 1.5, ease: 'power3.inOut' }, 0.75);
+    tl.addLabel('categoriesResolve', 2.05);
+    tl.to(ms.reflection, { value: 1, duration: 0.9, ease: MOTION.easeOut }, 2.05);
     tl.fromTo(
       titleEl.current,
       { opacity: 0, xPercent: -50, yPercent: -50, y: 18, scaleX: 0.97 },
-      { opacity: 1, xPercent: -50, yPercent: -50, y: 0, scaleX: 1, duration: 0.85, ease: 'power4.out' },
-      0.3
+      { opacity: 1, xPercent: -50, yPercent: -50, y: 0, scaleX: 1, duration: 0.95, ease: 'power4.out' },
+      2.0
+    );
+    tl.fromTo(
+      '.akxIdentity',
+      { opacity: 0, y: -8 },
+      { opacity: 1, y: 0, duration: 0.6, ease: MOTION.easeOut },
+      2.25
     );
     tl.fromTo(
       shadowEl.current,
       { opacity: 0 },
-      { opacity: 0.13 * ms.debug.shadowStrength, duration: 0.55, ease: MOTION.easeOut },
-      0.55
+      { opacity: 0.13 * ms.debug.shadowStrength, duration: 0.6, ease: MOTION.easeOut },
+      2.35
     );
     tl.fromTo(
       labelEl.current,
       { opacity: 0, y: 10 },
-      { opacity: 1, y: 0, duration: 0.5, ease: MOTION.easeOut },
-      0.75
+      { opacity: 1, y: 0, duration: 0.6, ease: MOTION.easeOut },
+      2.55
     );
-  }, [ms]);
+    tl.addLabel('dockAppears', 2.9);
+    tl.call(() => setDockVisible(true), undefined, 2.9);
+    tl.addLabel('introComplete', 3.7);
+    tl.to({}, { duration: 0.01 }, 3.7);
+
+    // Reduced motion: skip the orbit — land on the resolved overview.
+    if (prefersReducedMotion()) tl.progress(0.999);
+  }, [count, ms]);
+
+  const handleLoaderReveal = useCallback(() => {
+    startIntro();
+  }, [startIntro]);
 
   const navigate = useCallback(
     (dir: -1 | 1) => {
       if (lock.current) return;
-      if (sceneRef.current === 'journey') return toPortfolio();
       if (sceneRef.current !== 'portfolio-curved') return;
+      spin.current.vel = 0;
+      spin.current.settled = true;
+      activeFloat.current = Math.round(ms.active.value);
       activeFloat.current += dir;
       const wrapped = ((activeFloat.current % count) + count) % count;
       setActiveIndex(wrapped);
@@ -179,7 +217,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
         );
       }
     },
-    [count, ms, toPortfolio]
+    [count, ms]
   );
 
   const morphGrid = useCallback(() => {
@@ -189,7 +227,10 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
     badge.current.visible = false;
     gsap.set(badgeEl.current, { opacity: 0 });
     // Stop rotation first, then unfold.
-    activeFloat.current = Math.round(activeFloat.current);
+    spin.current.vel = 0;
+    spin.current.settled = true;
+    activeFloat.current = Math.round(ms.active.value);
+    setActiveIndex(((activeFloat.current % count) + count) % count);
     gsap.killTweensOf(ms.active);
     const tl = gsap.timeline({
       onComplete: () => {
@@ -335,6 +376,9 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
           duration: MOTION.hover,
           ease: MOTION.easeOut,
         });
+        // Label shifts a few pixels and the dock brightens slightly (§10).
+        gsap.to(labelEl.current, { y: -3, duration: MOTION.hover, ease: MOTION.easeOut });
+        gsap.to('.akxDock', { filter: 'brightness(1.07)', duration: MOTION.hover, ease: MOTION.easeOut });
       } else {
         gsap.to(ms.lift, { value: 0, duration: 0.55, ease: MOTION.easeOut });
         gsap.to(shadowEl.current, {
@@ -344,6 +388,8 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
           duration: 0.55,
           ease: MOTION.easeOut,
         });
+        gsap.to(labelEl.current, { y: 0, duration: 0.55, ease: MOTION.easeOut });
+        gsap.to('.akxDock', { filter: 'brightness(1)', duration: 0.55, ease: MOTION.easeOut });
       }
     },
     [ms]
@@ -431,7 +477,16 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
   const onDragStart = useCallback(
     (e: React.PointerEvent) => {
       if (sceneRef.current !== 'portfolio-curved' || lock.current) return;
-      drag.current = { on: true, moved: false, startX: e.clientX, base: ms.active.value };
+      drag.current = {
+        on: true,
+        moved: false,
+        startX: e.clientX,
+        base: ms.active.value,
+        lastX: e.clientX,
+        lastT: performance.now(),
+        vel: 0,
+      };
+      spin.current.vel = 0;
       gsap.killTweensOf(ms.active);
     },
     [ms]
@@ -442,20 +497,25 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
       if (!d.on) return;
       const dx = e.clientX - d.startX;
       if (Math.abs(dx) > 6) d.moved = true;
-      ms.active.value = d.base - dx / (stripPx.w * STRIP.spread);
+      ms.active.value = d.base - dx / (stripPx.w * (1 + STRIP.gap));
+      const now = performance.now();
+      const dt = (now - d.lastT) / 1000;
+      if (dt > 0.004) {
+        // Instantaneous drag velocity in panels/second, lightly smoothed.
+        const v = -(e.clientX - d.lastX) / (stripPx.w * (1 + STRIP.gap)) / dt;
+        d.vel = d.vel * 0.6 + v * 0.4;
+        d.lastX = e.clientX;
+        d.lastT = now;
+      }
     };
     const up = () => {
       const d = drag.current;
       if (!d.on) return;
       d.on = false;
       if (d.moved) {
-        activeFloat.current = Math.round(ms.active.value);
-        setActiveIndex(((activeFloat.current % count) + count) % count);
-        gsap.to(ms.active, {
-          value: activeFloat.current,
-          duration: 0.8,
-          ease: MOTION.easeSettle,
-        });
+        // Release becomes a fling — the spin ticker glides and settles it.
+        spin.current.vel = Math.max(-4.5, Math.min(4.5, d.vel));
+        spin.current.settled = false;
       }
       requestAnimationFrame(() => (drag.current.moved = false));
     };
@@ -466,6 +526,56 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
       window.removeEventListener('pointerup', up);
     };
   }, [count, ms, stripPx.w]);
+
+  // --- Inertial spin: wheel/fling adds velocity, friction glides it down, ----
+  // --- then the strip settles softly onto the nearest panel. -----------------
+  useEffect(() => {
+    const lastShownIndex = { value: activeIndex };
+    const tick = (_time: number, deltaTime: number) => {
+      const sp = spin.current;
+      if (sceneRef.current !== 'portfolio-curved' || lock.current || drag.current.on) return;
+      const dt = Math.min(0.05, deltaTime / 1000);
+      if (Math.abs(sp.vel) > 0.02) {
+        ms.active.value += sp.vel * dt;
+        // Gentle exponential friction — keeps rolling, eventually slows down.
+        sp.vel *= Math.exp(-1.35 * dt);
+        sp.settled = false;
+        const wrapped = ((Math.round(ms.active.value) % count) + count) % count;
+        if (wrapped !== lastShownIndex.value) {
+          lastShownIndex.value = wrapped;
+          setActiveIndex(wrapped);
+        }
+      } else if (!sp.settled) {
+        sp.vel = 0;
+        sp.settled = true;
+        activeFloat.current = Math.round(ms.active.value);
+        const wrapped = ((activeFloat.current % count) + count) % count;
+        lastShownIndex.value = wrapped;
+        setActiveIndex(wrapped);
+        gsap.to(ms.active, { value: activeFloat.current, duration: 0.9, ease: 'power3.out' });
+      }
+    };
+    gsap.ticker.add(tick);
+    return () => gsap.ticker.remove(tick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [count, ms]);
+
+  useEffect(() => {
+    let cool = 0;
+    const onWheel = (e: WheelEvent) => {
+      const sc = sceneRef.current;
+      if (lock.current) return;
+      void cool;
+      if (sc !== 'portfolio-curved') return;
+      const delta = e.deltaY + e.deltaX;
+      gsap.killTweensOf(ms.active);
+      const sp = spin.current;
+      sp.vel = Math.max(-4.5, Math.min(4.5, sp.vel + delta * 0.0035));
+      sp.settled = false;
+    };
+    window.addEventListener('wheel', onWheel, { passive: true });
+    return () => window.removeEventListener('wheel', onWheel);
+  }, [ms]);
 
   // --- Keyboard ---------------------------------------------------------------
   useEffect(() => {
@@ -496,28 +606,25 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
     else navigate(1);
   }, [inWork, backToPortfolio, backToCurved, navigate]);
   const onDockOpen = useCallback(() => {
-    if (sceneRef.current === 'journey') toPortfolio();
-    else if (inWork) backToPortfolio();
+    if (inWork) backToPortfolio();
     else openSelected(activeIndex);
-  }, [inWork, toPortfolio, backToPortfolio, openSelected, activeIndex]);
+  }, [inWork, backToPortfolio, openSelected, activeIndex]);
   const onDockMode = useCallback(() => {
     const sc = sceneRef.current;
-    if (sc === 'journey') toPortfolio();
-    else if (sc === 'portfolio-curved') morphGrid();
+    if (sc === 'portfolio-curved') morphGrid();
     else if (sc === 'portfolio-grid') backToCurved();
     else if (inWork) backToPortfolio();
-  }, [inWork, toPortfolio, morphGrid, backToCurved]);
+  }, [inWork, morphGrid, backToCurved]);
 
   // --- Debug API ------------------------------------------------------------------
   const debugApi: DebugApi = useMemo(
     () => ({
       replayLoader: () => {
         lock.current = false;
+        introTl.current?.kill();
         gsap.globalTimeline.clear();
         setScene('loading');
         setLoaderGone(false);
-        setJourneyOn(false);
-        setLeavingJourney(false);
         setCanvasOn(false);
         setCanvasVisible(false);
         setWorkOn(false);
@@ -525,6 +632,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
         setDockVisible(false);
         setLoadPct(0);
         ms.curvature.value = 0;
+        ms.wrap.value = 0;
         ms.grid.value = 0;
         ms.select.value = 0;
         ms.reveal.value = 0;
@@ -535,14 +643,28 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
         setActiveIndex(INITIAL_INDEX);
         setResetKey((k) => k + 1);
       },
-      replayAssembly: () => {
-        if (sceneRef.current !== 'journey') return;
-        setJourneyKey((k) => k + 1);
+      replayIntro: () => {
+        const sc = sceneRef.current;
+        if (sc === 'loading') return;
+        setWorkOn(false);
+        setMosaicOn(false);
+        startIntro();
+      },
+      scrubIntro: (progress: number) => {
+        introTl.current?.pause().progress(progress);
+      },
+      pauseIntro: () => {
+        const tl = introTl.current;
+        if (!tl) return;
+        if (tl.paused()) tl.play();
+        else tl.pause();
+      },
+      jumpIntro: (label: string) => {
+        introTl.current?.pause().seek(label);
       },
       goCurved: () => {
         const sc = sceneRef.current;
-        if (sc === 'journey') toPortfolio();
-        else if (sc === 'portfolio-grid') backToCurved();
+        if (sc === 'portfolio-grid') backToCurved();
         else if (sc === 'work' || sc === 'work-gallery') backToPortfolio();
       },
       morphGrid,
@@ -560,37 +682,38 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
         ms.pointerUv = { x: 0.62, y: 0.38 };
         setCurvedHover(hoverSim.current);
       },
+      snapshot: () => ({
+        scene: sceneRef.current,
+        active: activeFloat.current,
+        locked: lock.current,
+        wrap: ms.wrap.value,
+        grid: ms.grid.value,
+        select: ms.select.value,
+        reflection: ms.reflection.value,
+        selectedIndex: ms.selectedIndex,
+        hoverPanel: ms.hoverPanel,
+      }),
     }),
-    [ms, toPortfolio, backToCurved, backToPortfolio, morphGrid, openSelected, activeIndex, mosaicOn, workOn, setCurvedHover]
+    [ms, startIntro, backToCurved, backToPortfolio, morphGrid, openSelected, activeIndex, mosaicOn, workOn, setCurvedHover]
   );
 
-  const selectRectPx = cellRectPx(SELECT_RECT);
+  const selectRectPx = cellRectPx(selectRect());
 
   return (
     <div className="akxStage" ref={stage} key={resetKey}>
       <header className="akxTop">
-        <p className="akxTopName">{profile.name}</p>
+        <p className="akxIdentity" style={{ opacity: 0 }}>
+          <span className="akxIdentityName">{profile.name}</span> is building the trust &amp;
+          evaluation layer for AI.
+        </p>
         <button type="button" className="akxTopGalaxy" onClick={onEnterGalaxy}>
           Enter Galaxy
         </button>
       </header>
 
-      <h2 className="akxPortfolioTitle" ref={titleEl} aria-hidden={scene === 'journey'}>
+      <h2 className="akxPortfolioTitle" ref={titleEl} aria-hidden={scene === 'intro'}>
         PORTFOLIO
       </h2>
-
-      {journeyOn ? (
-        <JourneyScene
-          key={`journey-${journeyKey}`}
-          heroSrc={orbitCategories[INITIAL_INDEX].image}
-          title="Journey"
-          fragmentCount={ms.debug.fragmentCount}
-          leaving={leavingJourney}
-          onAssembled={() => setDockVisible(true)}
-          onHeroClick={toPortfolio}
-          onLeaveDone={() => undefined}
-        />
-      ) : null}
 
       {canvasOn ? (
         <div
@@ -617,7 +740,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
         aria-hidden="true"
       />
 
-      <p className="akxStripLabel" ref={labelEl} style={{ opacity: 0 }} aria-live="polite">
+      <p className="akxEmboss" ref={labelEl} style={{ opacity: 0 }} aria-live="polite">
         {active.label}
       </p>
 
@@ -647,8 +770,8 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
       </div>
 
       <Dock
-        active={active}
-        index={activeIndex}
+        categories={orbitCategories}
+        activeIndex={activeIndex}
         count={count}
         visible={dockVisible}
         modeHint={modeHint}

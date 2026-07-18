@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import gsap from 'gsap';
 import Lenis from 'lenis';
 import type { OrbitCategory } from '../../data/aikawaData';
-import { MOTION } from '../../lib/motion/constants';
+import { MOTION, prefersReducedMotion } from '../../lib/motion/constants';
 import { makeDecorFragments } from '../../lib/aikawa/fragments';
 
 const WORK_PALETTE = [
@@ -22,19 +22,6 @@ type CapSpring = {
   cornerV: number;
   hover: boolean;
 };
-
-function capPath(arch: number, lean: number, corner: number): string {
-  const c = 120 - corner;
-  const apexX = 500 + lean * 420;
-  const apexY = 120 - arch;
-  const midY = (c + apexY) / 2 + 6;
-  return (
-    `M0,${c.toFixed(1)} ` +
-    `C${(180 + lean * 90).toFixed(1)},${midY.toFixed(1)} ${(330 + lean * 130).toFixed(1)},${(apexY + 6).toFixed(1)} ${apexX.toFixed(1)},${apexY.toFixed(1)} ` +
-    `C${(670 + lean * 130).toFixed(1)},${(apexY + 6).toFixed(1)} ${(820 + lean * 90).toFixed(1)},${midY.toFixed(1)} 1000,${c.toFixed(1)} ` +
-    `L1000,121 L0,121 Z`
-  );
-}
 
 type Props = {
   category: OrbitCategory;
@@ -58,6 +45,15 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
   // --- Intro ----------------------------------------------------------------
   useEffect(() => {
     const ctx = gsap.context(() => {
+      if (prefersReducedMotion()) {
+        gsap.set(['.akxWorkTitle', '.akxWorkRise', '.akxWorkRise img', '.akxWorkDecor'], {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          filter: 'none',
+        });
+        return;
+      }
       gsap.fromTo(
         '.akxWorkTitle',
         { opacity: 0, filter: 'blur(5px)', y: 16 },
@@ -93,11 +89,12 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
   useEffect(() => {
     if (!scroller.current || !content.current) return;
 
+    const reduced = prefersReducedMotion();
     const lenis = new Lenis({
       wrapper: scroller.current,
       content: content.current,
       duration: 1.05,
-      smoothWheel: true,
+      smoothWheel: !reduced,
       wheelMultiplier: 0.85,
       touchMultiplier: 1.0,
     });
@@ -112,11 +109,11 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
       }
     });
 
-    const capEls = Array.from(root.current?.querySelectorAll<SVGPathElement>('.akxCardCap path') ?? []);
+    const mediaEls = Array.from(root.current?.querySelectorAll<HTMLElement>('.akxCardMedia') ?? []);
     const shadowEls = Array.from(root.current?.querySelectorAll<HTMLElement>('.akxCardCapShadow') ?? []);
     const mediaImgs = Array.from(root.current?.querySelectorAll<HTMLElement>('.akxCardMedia img') ?? []);
     const cardEls = Array.from(root.current?.querySelectorAll<HTMLElement>('.akxCard') ?? []);
-    const springs: CapSpring[] = capEls.map(() => ({
+    const springs: CapSpring[] = mediaEls.map(() => ({
       arch: 15,
       archV: 0,
       lean: 0,
@@ -149,6 +146,7 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
       lenis.raf(now);
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
+      if (reduced) return;
 
       const vh = window.innerHeight;
       springs.forEach((s, i) => {
@@ -163,7 +161,13 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
         [s.arch, s.archV] = spring(s.arch, s.archV, archTarget);
         [s.lean, s.leanV] = spring(s.lean, s.leanV, leanTarget, 90, 11);
         [s.corner, s.cornerV] = spring(s.corner, s.cornerV, cornerTarget);
-        capEls[i]?.setAttribute('d', capPath(s.arch, s.lean, s.corner));
+        // The photograph's OWN top edge arches (reference uRollTopBend): a wide
+        // shallow ellipse whose height breathes, leaning with scroll velocity.
+        const media = mediaEls[i];
+        if (media) {
+          media.style.borderRadius = `50% 50% 0 0 / ${Math.max(2, s.arch).toFixed(1)}px ${Math.max(2, s.arch).toFixed(1)}px 0 0`;
+          media.style.transform = `rotate(${(s.lean * 6).toFixed(2)}deg) translateY(${(-s.corner * 0.6).toFixed(1)}px)`;
+        }
 
         // Internal image moves 3–5% slower than the card (soft parallax).
         const card = cardEls[i];
@@ -221,9 +225,6 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
           <section className="akxCards">
             {cards.map((card) => (
               <article className="akxCard" key={card.id}>
-                <svg className="akxCardCap" viewBox="0 0 1000 120" preserveAspectRatio="none" aria-hidden="true">
-                  <path d={capPath(15, 0, 0)} />
-                </svg>
                 <div className="akxCardCapShadow" aria-hidden="true" />
                 <div className="akxCardMedia" style={{ background: card.imageBg ?? '#ece9e3' }}>
                   {card.image ? (
@@ -233,12 +234,27 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
                       draggable={false}
                       className={card.imageFit === 'contain' ? 'isContain' : 'isCover'}
                     />
-                  ) : null}
+                  ) : (
+                    <span className="akxCardMark" aria-hidden="true">
+                      {card.meta ?? card.title}
+                    </span>
+                  )}
                 </div>
                 <div className="akxCardFooter">
                   <p className="akxCardMeta">{card.meta ?? category.label}</p>
                   <h3>{card.title}</h3>
                   <p>{card.body}</p>
+                  {card.href ? (
+                    <a
+                      className="akxCardLink"
+                      href={card.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {card.linkLabel ?? 'View ↗'}
+                    </a>
+                  ) : null}
                 </div>
               </article>
             ))}

@@ -37,6 +37,9 @@ uniform float uOpacity;
 uniform float uBrightness;
 uniform vec2 uScale;
 uniform vec2 uShift;
+uniform vec2 uPointer;
+uniform float uGlassEdge;
+uniform float uGlassPointer;
 varying vec2 vUv;
 
 void main() {
@@ -44,6 +47,18 @@ void main() {
   vec4 tex = texture2D(uMap, uv);
   float inside = step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
   vec3 color = mix(uBg, tex.rgb, tex.a * inside);
+
+  // Integrated glass: faint highlight along the card edges plus a soft top
+  // sheen — the optical "card:glass:edge" from the reference, kept restrained
+  // so the photograph stays dominant.
+  float edgeD = min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y));
+  float edgeGlow = smoothstep(0.045, 0.0, edgeD) * uGlassEdge * 0.5;
+  float topSheen = smoothstep(0.90, 1.0, vUv.y) * uGlassEdge * 0.35;
+  // Pointer specular — a soft moving highlight while hovering.
+  float pd = distance(vUv, uPointer);
+  float pointerGlow = smoothstep(0.34, 0.0, pd) * uGlassPointer;
+
+  color += vec3(1.0) * (edgeGlow + topSheen + pointerGlow);
   gl_FragColor = vec4(color * uBrightness, uOpacity);
 }
 `;

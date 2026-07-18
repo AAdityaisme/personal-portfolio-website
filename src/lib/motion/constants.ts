@@ -15,8 +15,7 @@ export const MOTION = {
 
 export type Scene =
   | 'loading'
-  | 'journey'
-  | 'journey-to-portfolio'
+  | 'intro' // splash: photos enter flat, wrap onto the cylinder, orbit and settle
   | 'portfolio-curved'
   | 'portfolio-grid'
   | 'project-selected'
@@ -42,6 +41,8 @@ export type MotionState = {
   select: Dial;
   /** Portfolio entrance: 0 hidden → 1 revealed (sides + reflection). */
   reveal: Dial;
+  /** Splash blend: 0 = flat filmstrip (intro start) → 1 = wrapped cylinder. */
+  wrap: Dial;
   /** Reflection master opacity multiplier. */
   reflection: Dial;
   /** Hover lift on the active panel, in px (0 → -6). */
@@ -72,6 +73,7 @@ export function createMotionState(): MotionState {
     grid: { value: 0 },
     select: { value: 0 },
     reveal: { value: 0 },
+    wrap: { value: 0 },
     reflection: { value: 0 },
     lift: { value: 0 },
     selectedIndex: 0,
@@ -88,20 +90,21 @@ export function createMotionState(): MotionState {
   };
 }
 
-/** Strip geometry in viewport fractions — shared by WebGL, DOM shadow and overlays. */
+/**
+ * Strip geometry — the cards live on a TRUE cylinder, matching the reference
+ * engine: angleStep = 2π/count, radius = panelSpan/angleStep, axis behind the
+ * screen at z = −radius. Neighbours wrap around the cylinder so only slim
+ * slivers peek at the viewport edges.
+ */
 export const STRIP = {
-  /** Panel width as fraction of viewport width. */
-  width: 0.56,
-  /** Panel aspect (h = w * aspect). */
-  aspect: 9 / 21,
+  /** Panel width as fraction of viewport width (reference active card ≈ 0.58). */
+  width: 0.58,
+  /** Panel aspect (h = w * aspect) — 16:9 per the reference layout config. */
+  aspect: 0.5625,
   /** Vertical center of the strip in viewport fractions (from top). */
   centerY: 0.5,
-  /** Carousel spread between panels, as fraction of panel width. */
-  spread: 0.78,
-  /** Max side-panel yaw in radians (~24°). */
-  yaw: 0.42,
-  /** Total curve angle across the panel, radians (~57°). */
-  curve: 1.0,
+  /** Gap between adjacent cards on the arc, as a fraction of panel width. */
+  gap: 0.055,
   /** Gap between panel bottom and reflection top, px. */
   reflectionGap: 14,
   /** Reflection vertical compression. */
@@ -121,12 +124,32 @@ export const GRID_CELLS: Record<number, GridCell> = {
   0: { cx: 0.5, cy: 0.42, w: 0.4, h: 0.3 },
   [-1]: { cx: 0.15, cy: 0.4, w: 0.19, h: 0.24 },
   1: { cx: 0.85, cy: 0.4, w: 0.19, h: 0.24 },
-  [-2]: { cx: 0.31, cy: 0.75, w: 0.23, h: 0.15, pale: true },
-  2: { cx: 0.69, cy: 0.75, w: 0.23, h: 0.15, pale: true },
+  [-2]: { cx: 0.12, cy: 0.76, w: 0.16, h: 0.13, pale: true },
+  2: { cx: 0.88, cy: 0.76, w: 0.16, h: 0.13, pale: true },
+  [-3]: { cx: 0.37, cy: 0.77, w: 0.21, h: 0.15, pale: true },
+  3: { cx: 0.63, cy: 0.77, w: 0.21, h: 0.15, pale: true },
 };
 
 /** Centered rect the selected tile settles into before the mosaic breakup. */
 export const SELECT_RECT: GridCell = { cx: 0.5, cy: 0.46, w: 0.46, h: 0.34 };
+
+/** Strip width fraction, wider on narrow viewports so the panel stays readable. */
+export function stripWidthFraction(): number {
+  return typeof window !== 'undefined' && window.innerWidth < 720 ? 0.82 : STRIP.width;
+}
+
+/** Centered rect for the selected tile, responsive to narrow viewports. */
+export function selectRect(): GridCell {
+  if (typeof window !== 'undefined' && window.innerWidth < 720) {
+    return { cx: 0.5, cy: 0.44, w: 0.82, h: 0.26 };
+  }
+  return SELECT_RECT;
+}
+
+/** True when the user asks for reduced motion — large tweens collapse to states. */
+export function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
 
 /** Wrap a carousel offset into [-count/2, count/2). */
 export function wrapOffset(offset: number, count: number): number {

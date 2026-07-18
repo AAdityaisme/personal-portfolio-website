@@ -53,11 +53,11 @@ function Roll({ itemKey, children }: { itemKey: string; children: ReactNode }) {
 }
 
 type Props = {
-  active: OrbitCategory;
-  index: number;
+  categories: OrbitCategory[];
+  activeIndex: number;
   count: number;
   visible: boolean;
-  /** Label under the mode circle's meaning changes per scene. */
+  /** 'grid' | 'carousel' pick the mode icon; 'back' renders the detail dock. */
   modeHint: 'grid' | 'carousel' | 'back';
   onPrev: () => void;
   onNext: () => void;
@@ -65,45 +65,96 @@ type Props = {
   onMode: () => void;
 };
 
-/** Stage — fixed glass navigation dock: prev circle, center pill, next circle, mode circle. */
-export function Dock({ active, index, count, visible, modeHint, onPrev, onNext, onOpen, onMode }: Props) {
+/**
+ * Reference dock: one glass pill [thumb | eyebrow+label | ← →] plus a separate
+ * circular mode button. Hovering an arrow previews the neighbouring category
+ * inside the pill ("Next / FASHION" in the reference). Detail scenes swap to
+ * [← back circle | Category pill | mode].
+ */
+export function Dock({
+  categories,
+  activeIndex,
+  count,
+  visible,
+  modeHint,
+  onPrev,
+  onNext,
+  onOpen,
+  onMode,
+}: Props) {
+  const [peek, setPeek] = useState<0 | -1 | 1>(0);
+  const detail = modeHint === 'back';
+  const shownIndex = detail || peek === 0 ? activeIndex : (activeIndex + peek + count) % count;
+  const shown = categories[shownIndex];
+  const eyebrow = detail
+    ? 'Category'
+    : peek === 1
+      ? 'Next'
+      : peek === -1
+        ? 'Prev'
+        : `${String(activeIndex + 1).padStart(2, '0')}/${String(count).padStart(2, '0')}`;
+
   return (
     <nav className={`akxDock ${visible ? 'isOn' : ''}`} aria-label="Portfolio navigation">
-      <button type="button" className="akxDockCircle" onClick={onPrev} aria-label="Previous">
-        <span className="akxDockIcon isLeft">‹</span>
-      </button>
+      {detail ? (
+        <button type="button" className="akxDockCircle" onClick={onPrev} aria-label="Back">
+          <span className="akxDockIcon isLeft">←</span>
+        </button>
+      ) : null}
 
-      <button type="button" className="akxDockPill" onClick={onOpen} aria-label={`Open ${active.label}`}>
-        <span className="akxDockThumb" style={{ background: active.imageBg ?? '#1c1c1c' }}>
-          <Roll itemKey={active.id}>
-            <img
-              src={active.image}
-              alt=""
-              draggable={false}
-              className={active.imageFit === 'contain' ? 'isContain' : 'isCover'}
-            />
-          </Roll>
-        </span>
-        <span className="akxDockText">
-          <span className="akxDockSub">
-            {String(index + 1).padStart(2, '0')}/{String(count).padStart(2, '0')}
+      <div className={`akxDockPill ${peek !== 0 ? 'isPeek' : ''}`}>
+        <button type="button" className="akxDockHit" onClick={onOpen} aria-label={`Open ${shown.label}`}>
+          <span className="akxDockThumb" style={{ background: shown.imageBg ?? '#1c1c1c' }}>
+            <Roll itemKey={shown.id}>
+              <img
+                src={shown.image}
+                alt=""
+                draggable={false}
+                className={shown.imageFit === 'contain' ? 'isContain' : 'isCover'}
+              />
+            </Roll>
           </span>
-          <Roll itemKey={active.id}>
-            <strong>{active.short}</strong>
-          </Roll>
-        </span>
-        <span className="akxDockDot" aria-hidden="true" />
-      </button>
+          <span className="akxDockText">
+            <span className="akxDockSub">
+              <Roll itemKey={eyebrow}>{eyebrow}</Roll>
+            </span>
+            <Roll itemKey={shown.id}>
+              <strong>{shown.short}</strong>
+            </Roll>
+          </span>
+        </button>
 
-      <button type="button" className="akxDockCircle" onClick={onNext} aria-label="Next">
-        <span className="akxDockIcon isRight">›</span>
-      </button>
+        {!detail ? (
+          <span className="akxDockArrows">
+            <button
+              type="button"
+              className="akxDockArr"
+              onClick={onPrev}
+              onPointerEnter={() => setPeek(-1)}
+              onPointerLeave={() => setPeek(0)}
+              aria-label="Previous category"
+            >
+              <span className="akxDockIcon isLeft">←</span>
+            </button>
+            <button
+              type="button"
+              className="akxDockArr"
+              onClick={onNext}
+              onPointerEnter={() => setPeek(1)}
+              onPointerLeave={() => setPeek(0)}
+              aria-label="Next category"
+            >
+              <span className="akxDockIcon isRight">→</span>
+            </button>
+          </span>
+        ) : null}
+      </div>
 
       <button
         type="button"
         className="akxDockCircle isMode"
         onClick={onMode}
-        aria-label={modeHint === 'grid' ? 'Grid view' : modeHint === 'carousel' ? 'Carousel view' : 'Back'}
+        aria-label={modeHint === 'grid' ? 'Grid view' : modeHint === 'carousel' ? 'Carousel view' : 'Overview'}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           {modeHint === 'grid' ? (

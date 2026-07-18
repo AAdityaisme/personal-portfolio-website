@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { MOTION } from '../../lib/motion/constants';
+import { MOTION, prefersReducedMotion } from '../../lib/motion/constants';
 
 type Props = {
   /** Real asset progress 0–100. */
@@ -35,7 +35,13 @@ export function Loader({ progress, name, onReveal, onDone }: Props) {
       const shown = { value: 0 };
       let finished = false;
 
-      gsap.to(pace, { value: 100, duration: 1.05, delay: 0.35, ease: 'power2.inOut' });
+      const reduced = prefersReducedMotion();
+      gsap.to(pace, {
+        value: 100,
+        duration: reduced ? 0.25 : 1.05,
+        delay: reduced ? 0 : 0.35,
+        ease: 'power2.inOut',
+      });
 
       const finish = () => {
         finished = true;
