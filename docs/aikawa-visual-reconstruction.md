@@ -141,12 +141,20 @@ return to the overview and re-enter the arc cleanly.
   line reflowed to avoid the Galaxy button.
 - Reduced motion: intro jumps to the settled overview; selection/scroll unaffected.
 
+## Second pass (signature behaviors added)
+
+- Whole-arc pointer tilt (lagged ±2.6°, arc state only) — reference mouseArcTilt.
+- Splash camera blend: intro camera starts pulled back/raised, settles with the arc.
+- Velocity wave on card top edges while the cylinder spins (subtle, decays at rest).
+- Reflection chroma split + mirrored embossed category text below the strip.
+- Dispersal pieces carry a specular gloss — they read as prism glass shards.
+- ZOOM cursor chip + click-to-open lightbox in the detail gallery (verified live).
+
 ## Remaining uncertainty (honest)
 
-- The reference's splash-to-arc camera blend, reflection chroma/noise shader, and
-  the exact intro timings could not be frame-timed (no real site recording; pane
-  throttling). Geometry and states came from the bundle; timings are tuned by eye.
-- The reference's ZOOM cursor chip in detail view exists locally only as the grid
-  VIEW badge, not in the detail gallery.
+- Exact intro timings are tuned by eye (no real site recording exists; the pane
+  throttles rAF). Geometry, states and material constants come from the bundle.
+- The reference's reflection noise/velocity-chroma shader is approximated with a
+  static chroma split; their About page and per-project routes are out of scope.
 - Phantom duplicate clicks in the test harness occasionally re-trigger controls;
   not reproducible in a real browser session.
