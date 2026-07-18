@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import Lenis from 'lenis';
 import type { OrbitCategory } from '../../data/aikawaData';
@@ -41,6 +41,49 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
 
   const decor = useMemo(() => makeDecorFragments(16, WORK_PALETTE, 53), []);
   const cards = category.cards;
+  const [zoomSrc, setZoomSrc] = useState<string | null>(null);
+  const chipEl = useRef<HTMLDivElement>(null);
+  const chip = useRef({ x: 0, y: 0, tx: 0, ty: 0, on: false });
+
+  // ZOOM cursor chip — follows the pointer with lag over any gallery image
+  // (reference detail-view chip), click opens the lightbox.
+  useEffect(() => {
+    const rootEl = root.current;
+    if (!rootEl) return;
+    const over = (e: PointerEvent) => {
+      const media = (e.target as HTMLElement).closest('.akxCardMedia, .akxWorkRise');
+      const on = !!media;
+      chip.current.tx = e.clientX + 14;
+      chip.current.ty = e.clientY + 16;
+      if (on !== chip.current.on) {
+        chip.current.on = on;
+        if (on) {
+          chip.current.x = chip.current.tx;
+          chip.current.y = chip.current.ty;
+        }
+        gsap.to(chipEl.current, {
+          opacity: on ? 1 : 0,
+          scale: on ? 1 : 0.9,
+          duration: 0.24,
+          ease: 'power2.out',
+        });
+      }
+    };
+    rootEl.addEventListener('pointermove', over);
+    let raf = 0;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      const c = chip.current;
+      c.x += (c.tx - c.x) * 0.2;
+      c.y += (c.ty - c.y) * 0.2;
+      if (chipEl.current) chipEl.current.style.transform = `translate(${c.x}px, ${c.y}px)`;
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      rootEl.removeEventListener('pointermove', over);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
 
   // --- Intro ----------------------------------------------------------------
   useEffect(() => {
@@ -214,7 +257,7 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
           <section className="akxWorkIntro">
             <h2 className="akxSectionTitle akxWorkTitle">{category.label}</h2>
             <p className="akxWorkLead">{category.lead}</p>
-            <div className="akxWorkRise">
+            <div className="akxWorkRise" onClick={() => setZoomSrc(category.image)}>
               <img src={category.image} alt="" draggable={false} />
             </div>
             <p className="akxWorkHint" aria-hidden="true">
@@ -226,7 +269,11 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
             {cards.map((card) => (
               <article className="akxCard" key={card.id}>
                 <div className="akxCardCapShadow" aria-hidden="true" />
-                <div className="akxCardMedia" style={{ background: card.imageBg ?? '#ece9e3' }}>
+                <div
+                  className="akxCardMedia"
+                  style={{ background: card.imageBg ?? '#ece9e3' }}
+                  onClick={() => card.image && setZoomSrc(card.image)}
+                >
                   {card.image ? (
                     <img
                       src={card.image}
@@ -261,6 +308,22 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
           </section>
         </div>
       </div>
+
+      <div className="akxZoomChip" ref={chipEl} aria-hidden="true">
+        Zoom
+      </div>
+
+      {zoomSrc ? (
+        <div
+          className="akxLightbox"
+          onClick={() => setZoomSrc(null)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Escape' && setZoomSrc(null)}
+        >
+          <img src={zoomSrc} alt="" />
+        </div>
+      ) : null}
     </div>
   );
 }

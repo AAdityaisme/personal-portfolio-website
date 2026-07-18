@@ -83,10 +83,15 @@ export function MosaicTransition({
           },
           0.25 + p.fromCenter * 0.08
         );
-        // Phase 3 — recolor toward Work tones while separated.
+        // Phase 3 — recolor toward Work tones while separated, and pick up a
+        // glassy specular so the pieces read as prism shards.
         const tintEl = el.firstElementChild;
         if (tintEl) {
           tl.to(tintEl, { opacity: 0.62, duration: 0.55, ease: MOTION.easeSoft }, 0.32);
+        }
+        const glossEl = el.children[1];
+        if (glossEl) {
+          tl.to(glossEl, { opacity: 0.5, duration: 0.55, ease: MOTION.easeSoft }, 0.36);
         }
       });
 
@@ -120,6 +125,7 @@ export function MosaicTransition({
             className="akxMosaicTint"
             style={{ clipPath: p.clipPath, background: tint }}
           />
+          <div className="akxMosaicGloss" style={{ clipPath: p.clipPath }} />
         </div>
       ))}
     </div>

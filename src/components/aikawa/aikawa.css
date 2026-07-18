@@ -218,6 +218,17 @@
   white-space: nowrap;
 }
 
+.akxEmbossMirror {
+  top: calc(50vh + 17.5vw);
+  transform: scaleY(-0.82);
+  color: rgba(255, 255, 255, 0.34);
+  filter: blur(2px);
+  mix-blend-mode: normal;
+  text-shadow: none;
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent 85%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent 85%);
+}
+
 .akxViewBadge {
   position: fixed;
   left: 0;
@@ -257,6 +268,20 @@
   inset: 0;
   opacity: 0;
   mix-blend-mode: hard-light;
+}
+
+/* Soft specular so dispersed pieces read as glass shards, not paper. */
+.akxMosaicGloss {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: linear-gradient(
+    128deg,
+    rgba(255, 255, 255, 0.55),
+    rgba(255, 255, 255, 0.06) 34%,
+    rgba(255, 255, 255, 0.22) 68%,
+    rgba(255, 255, 255, 0.02)
+  );
 }
 
 /* --- Work scene ---------------------------------------------------------------- */
@@ -310,6 +335,7 @@
 }
 
 .akxWorkRise {
+  cursor: none;
   width: min(680px, 74vw);
   aspect-ratio: 16 / 9.6;
   overflow: hidden;
@@ -330,6 +356,49 @@
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+.akxZoomChip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 30;
+  padding: 6px 9px;
+  border-radius: 4px;
+  background: rgba(45, 45, 45, 0.55);
+  color: #fff;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+}
+
+.akxLightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(14, 13, 12, 0.86);
+  display: grid;
+  place-items: center;
+  cursor: zoom-out;
+  animation: akxLightboxIn 0.32s ease both;
+}
+
+@keyframes akxLightboxIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.akxLightbox img {
+  max-width: 92vw;
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
 }
 
 /* --- Stacked cards ---------------------------------------------------------------- */
@@ -366,6 +435,7 @@
 .akxCardMedia {
   position: relative;
   z-index: 2;
+  cursor: none;
   transform-origin: 50% 100%;
   will-change: border-radius, transform;
   height: min(52vh, 480px);
@@ -784,7 +854,18 @@
 html[data-akx-diag='on'] .akxCanvasWrap { outline: 2px solid #e11d48; outline-offset: -2px; }
 html[data-akx-diag='on'] .akxEmboss { outline: 1px dashed #2563eb; }
 html[data-akx-diag='on'] .akxShadow { outline: 1px dashed #d97706; opacity: 0.6 !important; }
-html[data-akx-diag='on'] .akxViewBadge { outline: 1px solid #16a34a; opacity: 1 !important; }
+html[data-akx-diag='on'] .akxEmbossMirror {
+  top: calc(50vh + 17.5vw);
+  transform: scaleY(-0.82);
+  color: rgba(255, 255, 255, 0.34);
+  filter: blur(2px);
+  mix-blend-mode: normal;
+  text-shadow: none;
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent 85%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent 85%);
+}
+
+.akxViewBadge { outline: 1px solid #16a34a; opacity: 1 !important; }
 html[data-akx-diag='on'] .akxMosaic { outline: 2px dashed #9333ea; }
 html[data-akx-diag='on'] .akxWork { outline: 2px solid #0891b2; outline-offset: -2px; }
 html[data-akx-diag='on'] .akxDock { outline: 1px solid #db2777; }

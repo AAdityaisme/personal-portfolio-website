@@ -64,6 +64,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
   const stage = useRef<HTMLDivElement>(null);
   const titleEl = useRef<HTMLHeadingElement>(null);
   const labelEl = useRef<HTMLParagraphElement>(null);
+  const mirrorEl = useRef<HTMLParagraphElement>(null);
   const shadowEl = useRef<HTMLDivElement>(null);
   const badgeEl = useRef<HTMLDivElement>(null);
   const drag = useRef({ on: false, moved: false, startX: 0, base: 0, lastX: 0, lastT: 0, vel: 0 });
@@ -76,7 +77,11 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
   const selected = orbitCategories[selectedIndex];
 
   useEffect(() => {
-    if (import.meta.env.DEV) (window as unknown as { __ak?: unknown }).__ak = ms;
+    if (import.meta.env.DEV) {
+      const w = window as unknown as { __ak?: unknown; __gsap?: unknown };
+      w.__ak = ms;
+      w.__gsap = gsap;
+    }
   }, [ms]);
 
   // Center the giant title once; every later tween keeps these percents.
@@ -138,6 +143,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
     ms.grid.value = 0;
     ms.select.value = 0;
     ms.panelHidden = false;
+    ms.cam.value = 0;
     ms.active.value = INITIAL_INDEX + count * 1.18;
     activeFloat.current = INITIAL_INDEX;
     setActiveIndex(INITIAL_INDEX);
@@ -158,6 +164,8 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
     tl.to(ms.active, { value: INITIAL_INDEX, duration: 3.6, ease: 'power3.inOut' }, 0);
     tl.addLabel('orbitBegins', 0.75);
     tl.to(ms.wrap, { value: 1, duration: 1.5, ease: 'power3.inOut' }, 0.75);
+    // Splash camera settles as the arc forms (reference splashArcCameraBlend).
+    tl.to(ms.cam, { value: 1, duration: 1.9, ease: 'power2.inOut' }, 0.9);
     tl.addLabel('categoriesResolve', 2.05);
     tl.to(ms.reflection, { value: 1, duration: 0.9, ease: MOTION.easeOut }, 2.05);
     tl.fromTo(
@@ -179,7 +187,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
       2.35
     );
     tl.fromTo(
-      labelEl.current,
+      [labelEl.current, mirrorEl.current],
       { opacity: 0, y: 10 },
       { opacity: 1, y: 0, duration: 0.6, ease: MOTION.easeOut },
       2.55
@@ -211,7 +219,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
       gsap.to(ms.active, { value: activeFloat.current, duration: 0.85, ease: MOTION.easeInOut });
       if (labelEl.current) {
         gsap.fromTo(
-          labelEl.current,
+          [labelEl.current, mirrorEl.current],
           { opacity: 0, y: 8 },
           { opacity: 1, y: 0, duration: 0.4, delay: 0.3, ease: MOTION.easeOut }
         );
@@ -241,7 +249,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
     tl.to(ms.active, { value: activeFloat.current, duration: 0.2, ease: MOTION.easeSoft }, 0);
     tl.to(ms.grid, { value: 1, duration: 1.1, ease: MOTION.easeInOut }, 0.05);
     tl.to(shadowEl.current, { opacity: 0, duration: 0.5, ease: MOTION.easeOut }, 0.15);
-    tl.to(labelEl.current, { opacity: 0, y: -8, duration: 0.35, ease: MOTION.easeOut }, 0);
+    tl.to([labelEl.current, mirrorEl.current], { opacity: 0, y: -8, duration: 0.35, ease: MOTION.easeOut }, 0);
   }, [ms]);
 
   const backToCurved = useCallback(() => {
@@ -263,7 +271,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
       0.55
     );
     tl.fromTo(
-      labelEl.current,
+      [labelEl.current, mirrorEl.current],
       { opacity: 0, y: 10 },
       { opacity: 1, y: 0, duration: 0.45, ease: MOTION.easeOut },
       0.7
@@ -307,7 +315,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
         { y: '-35vh', xPercent: -50, yPercent: -50, opacity: 0, duration: 0.75, ease: MOTION.easeInOut },
         '<'
       );
-      tl.to(labelEl.current, { opacity: 0, duration: 0.3, ease: MOTION.easeOut }, 0);
+      tl.to([labelEl.current, mirrorEl.current], { opacity: 0, duration: 0.3, ease: MOTION.easeOut }, 0);
     },
     [ms, onEnterGalaxy]
   );
@@ -349,7 +357,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
           ease: MOTION.easeOut,
         });
         gsap.fromTo(
-          labelEl.current,
+          [labelEl.current, mirrorEl.current],
           { opacity: 0, y: 10 },
           { opacity: 1, y: 0, duration: 0.45, delay: 0.4, ease: MOTION.easeOut }
         );
@@ -377,7 +385,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
           ease: MOTION.easeOut,
         });
         // Label shifts a few pixels and the dock brightens slightly (§10).
-        gsap.to(labelEl.current, { y: -3, duration: MOTION.hover, ease: MOTION.easeOut });
+        gsap.to([labelEl.current, mirrorEl.current], { y: -3, duration: MOTION.hover, ease: MOTION.easeOut });
         gsap.to('.akxDock', { filter: 'brightness(1.07)', duration: MOTION.hover, ease: MOTION.easeOut });
       } else {
         gsap.to(ms.lift, { value: 0, duration: 0.55, ease: MOTION.easeOut });
@@ -388,7 +396,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
           duration: 0.55,
           ease: MOTION.easeOut,
         });
-        gsap.to(labelEl.current, { y: 0, duration: 0.55, ease: MOTION.easeOut });
+        gsap.to([labelEl.current, mirrorEl.current], { y: 0, duration: 0.55, ease: MOTION.easeOut });
         gsap.to('.akxDock', { filter: 'brightness(1)', duration: 0.55, ease: MOTION.easeOut });
       }
     },
@@ -638,6 +646,7 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
         ms.reveal.value = 0;
         ms.reflection.value = 0;
         ms.panelHidden = false;
+        ms.cam.value = 1;
         activeFloat.current = INITIAL_INDEX;
         ms.active.value = INITIAL_INDEX;
         setActiveIndex(INITIAL_INDEX);
@@ -743,6 +752,9 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
       <p className="akxEmboss" ref={labelEl} style={{ opacity: 0 }} aria-live="polite">
         {active.label}
       </p>
+      <p className="akxEmboss akxEmbossMirror" ref={mirrorEl} style={{ opacity: 0 }} aria-hidden="true">
+        {active.label}
+      </p>
 
       {mosaicOn ? (
         <MosaicTransition
@@ -765,7 +777,12 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
         />
       ) : null}
 
-      <div className="akxViewBadge" ref={badgeEl} style={{ opacity: 0 }} aria-hidden="true">
+      <div
+        className="akxViewBadge"
+        ref={badgeEl}
+        style={{ opacity: 0, visibility: scene === 'portfolio-grid' ? 'visible' : 'hidden' }}
+        aria-hidden="true"
+      >
         VIEW
       </div>
 

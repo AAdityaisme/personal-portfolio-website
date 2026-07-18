@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { OrbitCategory } from '../../data/aikawaData';
@@ -102,6 +102,8 @@ function Panel({
       uHoverStrength: { value: 0 },
       uGlassEdge: { value: 0 },
       uGlassPointer: { value: 0 },
+      uWave: { value: 0 },
+      uTime: { value: 0 },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [texture]
@@ -117,6 +119,9 @@ function Panel({
       uRadius: { value: radius },
       uPointer: { value: new THREE.Vector2(-10, -10) },
       uHoverStrength: { value: 0 },
+      uWave: { value: 0 },
+      uTime: { value: 0 },
+      uChroma: { value: 0.55 },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [texture]
@@ -246,10 +251,17 @@ function Panel({
     // only while hovering the front card (reference card:glass:edge ≈ 0.34).
     pu.uGlassEdge.value = 0.34 * (1 - gv) * opacity * (isActive ? 1 : 0.5);
     pu.uGlassPointer.value = curvedHover ? 0.12 * hv : 0;
+    // Velocity wave on the top edge while the cylinder spins — subtle.
+    const waveAmt =
+      Math.min(1, Math.abs(ms.velocity) * 0.3) * 0.016 * W * wv * (1 - gv) * (1 - sv);
+    pu.uWave.value = waveAmt;
+    pu.uTime.value += dt;
 
     const mu = mirrorMat.current.uniforms as typeof mirrorUniforms;
     mu.uRadius.value = radius;
     mu.uCurvature.value = curvature * wv;
+    mu.uWave.value = waveAmt;
+    mu.uTime.value = pu.uTime.value;
     mu.uScale.value.set(fitX, fitY);
     mu.uShift.value.copy(pu.uShift.value);
     const hoverDim = curvedHover ? lerp(1, 0.17 / 0.22, hv) : 1;
@@ -309,6 +321,12 @@ function Panel({
 }
 
 function StripScene({ categories, motionState, onPanelPointer, onPanelClick }: SceneProps) {
+  const rig = useRef<THREE.Group>(null);
+  const lastActive = useRef({ value: motionState.active.value, t: 0 });
+  const pointerTarget = useRef({ x: 0, y: 0 });
+  const { camera, scene } = useThree();
+  if (import.meta.env.DEV) (window as unknown as { __scene?: unknown }).__scene = scene;
+
   const textures = useLoader(
     THREE.TextureLoader,
     categories.map((c) => c.image)
@@ -318,8 +336,47 @@ function StripScene({ categories, motionState, onPanelPointer, onPanelClick }: S
     t.anisotropy = 4;
   });
 
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      pointerTarget.current.x = (e.clientX / window.innerWidth) * 2 - 1;
+      pointerTarget.current.y = (e.clientY / window.innerHeight) * 2 - 1;
+    };
+    window.addEventListener('pointermove', onMove);
+    return () => window.removeEventListener('pointermove', onMove);
+  }, []);
+
+  useFrame((state, dt) => {
+    const ms = motionState;
+
+    // Smoothed cylinder velocity (cards/s) for the edge wave.
+    if (dt > 0) {
+      const raw = (ms.active.value - lastActive.current.value) / dt;
+      ms.velocity += (raw - ms.velocity) * Math.min(1, dt * 8);
+      lastActive.current.value = ms.active.value;
+    }
+
+    // Whole-arc pointer tilt (reference mouseArcTilt): lagged, subtle, only in
+    // the wrapped arc state — never in grid/selection.
+    const arcMix = ms.wrap.value * (1 - ms.grid.value) * (1 - ms.select.value);
+    ms.tilt.x += (pointerTarget.current.x - ms.tilt.x) * Math.min(1, dt * 3.2);
+    ms.tilt.y += (pointerTarget.current.y - ms.tilt.y) * Math.min(1, dt * 3.2);
+    if (rig.current) {
+      rig.current.rotation.y = ms.tilt.x * 0.045 * arcMix;
+      rig.current.rotation.x = -ms.tilt.y * 0.028 * arcMix;
+      rig.current.position.y = ms.tilt.y * -0.06 * arcMix;
+    }
+
+    // Splash camera blend: pulled back and slightly above during the intro,
+    // settling into the resting camera as the arc resolves.
+    const cv = ms.cam.value;
+    camera.position.z = THREE.MathUtils.lerp(11.8, 9, cv);
+    camera.position.y = THREE.MathUtils.lerp(0.9, 0, cv);
+    camera.lookAt(0, 0, 0);
+    void state;
+  });
+
   return (
-    <>
+    <group ref={rig}>
       {categories.map((cat, i) => (
         <Panel
           key={cat.id}
@@ -332,7 +389,7 @@ function StripScene({ categories, motionState, onPanelPointer, onPanelClick }: S
           onPanelClick={onPanelClick}
         />
       ))}
-    </>
+    </group>
   );
 }
 

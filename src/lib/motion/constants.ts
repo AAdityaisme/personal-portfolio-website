@@ -43,6 +43,12 @@ export type MotionState = {
   reveal: Dial;
   /** Splash blend: 0 = flat filmstrip (intro start) → 1 = wrapped cylinder. */
   wrap: Dial;
+  /** Intro camera blend: 0 = pulled-back splash camera → 1 = settled camera. */
+  cam: Dial;
+  /** Smoothed cylinder rotation velocity (turns/s) — drives the edge wave. */
+  velocity: number;
+  /** Lagged pointer, normalized −1..1 — drives the whole-arc tilt. */
+  tilt: { x: number; y: number };
   /** Reflection master opacity multiplier. */
   reflection: Dial;
   /** Hover lift on the active panel, in px (0 → -6). */
@@ -74,6 +80,9 @@ export function createMotionState(): MotionState {
     select: { value: 0 },
     reveal: { value: 0 },
     wrap: { value: 0 },
+    cam: { value: 1 },
+    velocity: 0,
+    tilt: { x: 0, y: 0 },
     reflection: { value: 0 },
     lift: { value: 0 },
     selectedIndex: 0,
