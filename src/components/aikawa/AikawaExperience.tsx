@@ -304,12 +304,10 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
         },
       });
       setScene('project-selected');
-      if (from === 'portfolio-curved') {
-        // Selection from the curved strip goes through the grid pose briefly.
-        tl.to(ms.grid, { value: 1, duration: 0.6, ease: MOTION.easeInOut }, 0);
-        tl.to(shadowEl.current, { opacity: 0, duration: 0.4, ease: MOTION.easeOut }, 0);
-      }
-      tl.to(ms.select, { value: 1, duration: 0.85, ease: MOTION.easeInOut }, from === 'portfolio-curved' ? 0.35 : 0);
+      // Isolate directly from wherever the card sits (arc or grid) — never
+      // detour through a full grid layout behind the selected image.
+      tl.to(ms.select, { value: 1, duration: 0.85, ease: MOTION.easeInOut }, 0);
+      tl.to(shadowEl.current, { opacity: 0, duration: 0.4, ease: MOTION.easeOut }, 0);
       tl.to(
         titleEl.current,
         { y: '-35vh', xPercent: -50, yPercent: -50, opacity: 0, duration: 0.75, ease: MOTION.easeInOut },
@@ -569,12 +567,8 @@ export function AikawaExperience({ onEnterGalaxy }: Props) {
   }, [count, ms]);
 
   useEffect(() => {
-    let cool = 0;
     const onWheel = (e: WheelEvent) => {
-      const sc = sceneRef.current;
-      if (lock.current) return;
-      void cool;
-      if (sc !== 'portfolio-curved') return;
+      if (lock.current || sceneRef.current !== 'portfolio-curved') return;
       const delta = e.deltaY + e.deltaX;
       gsap.killTweensOf(ms.active);
       const sp = spin.current;

@@ -902,8 +902,8 @@ html[data-akx-diag='on'] .akxDock { outline: 1px solid #db2777; }
     font-size: clamp(3.4rem, 15vw, 6rem);
   }
 
-  .akxStripLabel {
-    top: calc(50vh + 0.82 * 100vw * 9 / 21 / 2 - 40px);
+  .akxEmbossMirror {
+    top: calc(50vh + 24vw);
   }
 
   .akxDockText .akxRoll {

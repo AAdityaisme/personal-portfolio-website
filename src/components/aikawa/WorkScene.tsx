@@ -85,6 +85,20 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
     };
   }, []);
 
+  // Escape closes the lightbox first (capture phase, so it wins over the
+  // scene-level Escape that would otherwise exit the whole Work section).
+  useEffect(() => {
+    if (!zoomSrc) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setZoomSrc(null);
+      }
+    };
+    window.addEventListener('keydown', onKey, { capture: true });
+    return () => window.removeEventListener('keydown', onKey, { capture: true });
+  }, [zoomSrc]);
+
   // --- Intro ----------------------------------------------------------------
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -318,8 +332,8 @@ export function WorkScene({ category, onEnteredGallery }: Props) {
           className="akxLightbox"
           onClick={() => setZoomSrc(null)}
           role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Escape' && setZoomSrc(null)}
+          aria-label="Close zoomed image"
+          tabIndex={-1}
         >
           <img src={zoomSrc} alt="" />
         </div>
